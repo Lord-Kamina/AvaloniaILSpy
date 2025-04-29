@@ -66,8 +66,8 @@
 			          SelectedItem="{Binding FilterSettings.LanguageVersion}"
                       ToolTip.Tip="{x:Static properties:Resources.SelectVersionDropdownTooltip}"/>
             <ComboBox x:Name="Themes" SelectedIndex="0" Width="100">
-                <ComboBoxItem>Light</ComboBoxItem>
-                <ComboBoxItem>Dark</ComboBoxItem>
+	            <ComboBoxItem>Dark</ComboBoxItem>
+	            <ComboBoxItem>Light</ComboBoxItem>
             </ComboBox>
 		</ListBox>
 		<!-- Status bar -->

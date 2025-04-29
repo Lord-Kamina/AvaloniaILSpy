@@ -140,7 +140,11 @@ namespace ICSharpCode.ILSpy
 			sessionSettings.FilterSettings.PropertyChanged += filterSettings_PropertyChanged;
 			
 			ContextMenuProvider.Add(treeView, decompilerTextView);
-
+			this.KeyBindings.Add(new KeyBinding()
+			{
+				Command = new CopyCommand<TextEditor>(decompilerTextView.textEditor),
+				Gesture = new KeyGesture(Key.C, KeyModifiers.Control)
+			});
 		}
 		private void InitializeComponent()
 		{

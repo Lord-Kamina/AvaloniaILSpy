@@ -148,7 +148,7 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileMethod(IMethod method, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = method.ParentModule.PEFile;
+            PEFile assembly = (PEFile)method.ParentModule.MetadataFile;
             CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
@@ -229,7 +229,7 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileProperty(IProperty property, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = property.ParentModule.PEFile;
+            PEFile assembly = (PEFile)property.ParentModule.MetadataFile;
             CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
@@ -239,7 +239,7 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileField(IField field, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = field.ParentModule.PEFile;
+            PEFile assembly = (PEFile)field.ParentModule.MetadataFile;
             CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
@@ -307,7 +307,7 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileEvent(IEvent @event, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = @event.ParentModule.PEFile;
+            PEFile assembly = (PEFile)@event.ParentModule.MetadataFile;
             CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
@@ -317,7 +317,7 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileType(ITypeDefinition type, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = type.ParentModule.PEFile;
+            PEFile assembly = (PEFile)type.ParentModule.MetadataFile;
             CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
@@ -489,6 +489,7 @@ namespace ICSharpCode.ILSpy
             : base(
                 options.DecompilerSettings,
                 assembly.GetAssemblyResolver(),
+                null,
                 null,
                 assembly.GetDebugInfoOrNull()
             )
@@ -699,7 +700,7 @@ namespace ICSharpCode.ILSpy
 
         public override bool ShowMember(IEntity member)
         {
-            PEFile assembly = member.ParentModule.PEFile;
+            PEFile assembly = (PEFile)member.ParentModule.MetadataFile;
             return showAllMembers || !CSharpDecompiler.MemberIsHidden(assembly, member.MetadataToken, new DecompilationOptions().DecompilerSettings);
         }
 

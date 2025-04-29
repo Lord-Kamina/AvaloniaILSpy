@@ -54,6 +54,10 @@ using Avalonia;
 using Avalonia.Interactivity;
 using Avalonia.Controls.Shapes;
 using System.Runtime.InteropServices;
+using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Input.Platform;
+using Avalonia.Rendering;
 
 namespace ICSharpCode.ILSpy.TextView
 {
@@ -228,9 +232,9 @@ namespace ICSharpCode.ILSpy.TextView
 			XmlDocRenderer renderer = new XmlDocRenderer();
 			renderer.AppendText(MainWindow.Instance.CurrentLanguage.GetTooltip(resolved));
 			try {
-				if (resolved.ParentModule == null || resolved.ParentModule.PEFile == null)
+				if (resolved.ParentModule == null || resolved.ParentModule.MetadataFile == null)
 					return null;
-				var docProvider = XmlDocLoader.LoadDocumentation(resolved.ParentModule.PEFile);
+				var docProvider = XmlDocLoader.LoadDocumentation(resolved.ParentModule.MetadataFile);
 				if (docProvider != null) {
 					string documentation = docProvider.GetDocumentation(resolved.GetIdString());
 					if (documentation != null) {
@@ -775,7 +779,7 @@ namespace ICSharpCode.ILSpy.TextView
 		/// </summary>
 		internal static string CleanUpName(string text)
 		{
-			return WholeProjectDecompiler.CleanUpFileName(text);
+			return WholeProjectDecompiler.CleanUpFileName(text, "");
 		}
 		#endregion
 

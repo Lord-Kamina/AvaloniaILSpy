@@ -181,7 +181,7 @@ namespace ICSharpCode.ILSpy.Search
                 Name = GetLanguageSpecificName(item),
                 LocationImage = declaringType != null ? TypeTreeNode.GetIcon(declaringType) : Images.Namespace,
                 Location = declaringType != null ? language.TypeToString(declaringType, includeNamespace: true) : item.Namespace,
-                ToolTip = item.ParentModule.PEFile?.FileName
+                ToolTip = item.ParentModule.MetadataFile?.FileName
             };
         }
 

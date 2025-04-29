@@ -63,10 +63,10 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		internal static IEnumerable<DerivedTypesEntryNode> FindDerivedTypes(AssemblyList list, ITypeDefinition type,
 			PEFile[] assemblies, CancellationToken cancellationToken)
 		{
-			var definitionMetadata = type.ParentModule.PEFile.Metadata;
+			var definitionMetadata = type.ParentModule.MetadataFile.Metadata;
 			var metadataToken = (SRM.TypeDefinitionHandle)type.MetadataToken;
 			foreach (var module in assemblies) {
-				var metadata = module.Metadata;
+				var metadata = module.Metadata; 
 				var assembly = (MetadataModule)module.GetTypeSystemOrNull().MainModule;
 				foreach (var h in metadata.TypeDefinitions) {
 					cancellationToken.ThrowIfCancellationRequested();

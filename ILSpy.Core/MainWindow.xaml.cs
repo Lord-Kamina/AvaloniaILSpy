@@ -575,7 +575,7 @@ namespace ICSharpCode.ILSpy
 
 				} else {
 					IEntity mr = await Task.Run(() => FindEntityInRelevantAssemblies(navigateTo, relevantAssemblies));
-					if (mr != null && mr.ParentModule.PEFile != null) {
+					if (mr != null && mr.ParentModule.MetadataFile!= null) {
 						found = true;
 						if (treeView.SelectedItem == initialSelection) {
 							JumpToReference(mr);

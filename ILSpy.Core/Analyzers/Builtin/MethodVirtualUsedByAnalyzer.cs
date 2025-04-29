@@ -43,7 +43,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			Debug.Assert(analyzedSymbol is IMethod);
 			var scope = context.GetScopeOf((IEntity)analyzedSymbol);
 			foreach (var type in scope.GetTypesInScope(context.CancellationToken)) {
-				var mappingInfo = context.Language.GetCodeMappingInfo(type.ParentModule.PEFile, type.MetadataToken);
+				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule.MetadataFile , type.MetadataToken);
 				var methods = type.GetMembers(m => m is IMethod, Options).OfType<IMethod>();
 				foreach (var method in methods) {
 					if (IsUsedInMethod((IMethod)analyzedSymbol, method, mappingInfo, context))
@@ -107,7 +107,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 							case HandleKind.MethodSpecification:
 							case HandleKind.MemberReference:
 								var m = (mainModule.ResolveEntity(member, genericContext) as IMember)?.MemberDefinition;
-								if (m.MetadataToken == analyzedMethod.MetadataToken && m.ParentModule.PEFile == analyzedMethod.ParentModule.PEFile) {
+								if (m.MetadataToken == analyzedMethod.MetadataToken && m.ParentModule.MetadataFile  == analyzedMethod.ParentModule.MetadataFile ) {
 									return true;
 								}
 								break;

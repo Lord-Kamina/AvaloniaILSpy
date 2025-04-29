@@ -301,8 +301,8 @@ namespace ICSharpCode.ILSpy.TreeNodes
 					case DirectoryNotFoundException dirNotFound:
 						HandleException(dirNotFound, "The directory was not found.");
 						return;
-					case PEFileNotSupportedException notSupported:
-						HandleException(notSupported, notSupported.Message);
+					 case MetadataFileNotSupportedException notSupported:
+					 	HandleException(notSupported, notSupported.Message);
 						return;
 					default:
 						throw;

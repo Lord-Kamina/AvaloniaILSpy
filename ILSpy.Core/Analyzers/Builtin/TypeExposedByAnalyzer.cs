@@ -49,7 +49,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		{
 			if (analyzedType.Kind == TypeKind.Enum
 				&& type.MetadataToken == analyzedType.MetadataToken
-				&& type.ParentModule.PEFile == analyzedType.ParentModule.PEFile)
+				&& type.ParentModule.MetadataFile  == analyzedType.ParentModule.MetadataFile )
 				yield break;
 
 			if (!context.Language.ShowMember(type))

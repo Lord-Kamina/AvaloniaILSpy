@@ -101,5 +101,27 @@ namespace ICSharpCode.ILSpy.DebugInfo
 			}
 			return false;
 		}
+		
+		public bool TryGetExtraTypeInfo(MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
+		{
+			var metadata = provider.GetMetadataReader();
+			extraTypeInfo = new PdbExtraTypeInfo();
+
+			foreach (var h in metadata.GetLocalScopes(method))
+			{
+				var scope = metadata.GetLocalScope(h);
+				foreach (var v in scope.GetLocalVariables())
+				{
+					var var = metadata.GetLocalVariable(v);
+					if (var.Index == index)
+					{
+						extraTypeInfo.TupleElementNames = new[] { metadata.GetString(var.Name) };
+						return true;
+					}
+				}
+			}
+
+			return false;
+		}
 	}
 }

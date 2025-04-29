@@ -120,5 +120,17 @@ namespace ICSharpCode.Decompiler.PdbProvider.Cecil
 			name = variable.Name;
 			return name != null;
 		}
+		
+		public bool TryGetExtraTypeInfo(SRM.MethodDefinitionHandle method, int index, out PdbExtraTypeInfo extraTypeInfo)
+		{
+			extraTypeInfo = new PdbExtraTypeInfo();
+			if (!debugInfo.TryGetValue(method, out var info)) {
+				return false;
+			}
+
+			var variable = info.Variables.FirstOrDefault(v => v.Index == index);
+			extraTypeInfo.TupleElementNames = new[] { variable.Name };
+			return  variable.Name != null;
+		}
 	}
 }

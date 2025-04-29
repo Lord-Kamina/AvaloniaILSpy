@@ -23,6 +23,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using ICSharpCode.Decompiler;
+using ICSharpCode.Decompiler.Metadata;
 using ICSharpCode.Decompiler.TypeSystem;
 
 namespace ICSharpCode.ILSpy.Analyzers.Builtin
@@ -109,9 +110,9 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
                     .Select(m => m.AccessorOwner ?? m);
             }
 
-            foreach (Decompiler.Metadata.PEFile module in scope.GetAllModules())
+            foreach (Decompiler.Metadata.MetadataFile  module in scope.GetAllModules())
             {
-                var ts = new DecompilerTypeSystem(module, module.GetAssemblyResolver());
+                var ts = new DecompilerTypeSystem(module, ((PEFile)module).GetAssemblyResolver());
 
                 switch (attribute)
                 {
@@ -156,7 +157,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 					var customAttribute = module.Metadata.GetCustomAttribute(h);
 					var attributeCtor = ts.MainModule.ResolveMethod(customAttribute.Constructor, genericContext);
 					if (attributeCtor.DeclaringTypeDefinition != null
-                        && attributeCtor.ParentModule.PEFile == attributeType.ParentModule.PEFile
+                        && attributeCtor.ParentModule.MetadataFile  == attributeType.ParentModule.MetadataFile 
                         && attributeCtor.DeclaringTypeDefinition.MetadataToken == attributeType.MetadataToken) {
                         if (customAttribute.Parent.Kind == HandleKind.Parameter) {
 							referencedParameters.Add((ParameterHandle)customAttribute.Parent);
@@ -189,7 +190,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 		ISymbol GetParentEntity(DecompilerTypeSystem ts, CustomAttribute customAttribute)
 		{
-			var metadata = ts.MainModule.PEFile.Metadata;
+			var metadata = ts.MainModule.MetadataFile .Metadata;
 			switch (customAttribute.Parent.Kind) {
 				case HandleKind.MethodDefinition:
 				case HandleKind.FieldDefinition:

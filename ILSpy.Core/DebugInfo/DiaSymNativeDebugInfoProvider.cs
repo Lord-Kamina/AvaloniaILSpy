@@ -125,6 +125,29 @@ namespace ICSharpCode.ILSpy.DebugInfo
 
 			return false;
 		}
+		
+		public bool TryGetExtraTypeInfo(MethodDefinitionHandle handle, int index, out PdbExtraTypeInfo extraTypeInfo)
+		{
+			extraTypeInfo = new PdbExtraTypeInfo();
+			var method = reader.GetMethod(MetadataTokens.GetToken(handle));
+			var scopes = new Queue<ISymUnmanagedScope>(new[] { method.GetRootScope() });
+			while (scopes.Count > 0) {
+				var scope = scopes.Dequeue();
+
+				foreach (var local in scope.GetLocals()) {
+					if (local.GetSlot() == index) {
+						// name = local.GetName();
+						extraTypeInfo.TupleElementNames = new [] { local.GetName() };
+						return true;
+					}
+				}
+
+				foreach (var s in scope.GetChildren())
+					scopes.Enqueue(s);
+			}
+
+			return false;
+		}
 
 		unsafe bool ISymReaderMetadataProvider.TryGetStandaloneSignature(int standaloneSignatureToken, out byte* signature, out int length)
 		{

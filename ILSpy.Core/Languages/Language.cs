@@ -423,7 +423,7 @@ namespace ICSharpCode.ILSpy
 		{
             string entityName;
             if (entity is ITypeDefinition t && !t.MetadataToken.IsNil) {
-                MetadataReader metadata = t.ParentModule.PEFile.Metadata;
+                MetadataReader metadata = t.ParentModule.MetadataFile.Metadata;
                 var typeDef = metadata.GetTypeDefinition((TypeDefinitionHandle)t.MetadataToken);
                 entityName = EscapeName(metadata.GetString(typeDef.Name));
             } else {

@@ -276,7 +276,7 @@ namespace ICSharpCode.ILSpy
 			}
 		}
 
-		sealed class MyAssemblyResolver : IAssemblyResolver
+		class MyAssemblyResolver : IAssemblyResolver
 		{
 			readonly LoadedAssembly parent;
 
@@ -290,25 +290,49 @@ namespace ICSharpCode.ILSpy
 				return UniversalAssemblyResolver.GetAssemblyInGac(reference) != null;
 			}
 
-			public PEFile Resolve(Decompiler.Metadata.IAssemblyReference reference)
+			public MetadataFile? Resolve(Decompiler.Metadata.IAssemblyReference reference)
 			{
 				return parent.LookupReferencedAssembly(reference)?.GetPEFileOrNull();
 			}
 
-            public Task<PEFile> ResolveAsync(IAssemblyReference reference)
-            {
-				return Task.Run(() => Resolve(reference));
-            }
-
-            public PEFile ResolveModule(PEFile mainModule, string moduleName)
+		
+			public MetadataFile? ResolveModule(MetadataFile mainModule, string moduleName)
 			{
-				return parent.LookupReferencedModule(mainModule, moduleName)?.GetPEFileOrNull();
+				return parent.LookupReferencedModule((PEFile)mainModule, moduleName)?.GetPEFileOrNull();
 			}
 
-            public Task<PEFile> ResolveModuleAsync(PEFile mainModule, string moduleName)
+			
+			public Task<MetadataFile?> ResolveAsync(IAssemblyReference reference)
+			{
+				// var assembly = parent.LookupReferencedAssembly(reference);
+				return Task.Run(() => Resolve(reference));
+			}
+
+			
+			public Task<MetadataFile?> ResolveModuleAsync(MetadataFile mainModule, string moduleName)
 			{
 				return Task.Run(() => ResolveModule(mainModule, moduleName));
 			}
+
+			MetadataFile? IAssemblyResolver.Resolve(IAssemblyReference reference)
+			{
+				return Resolve(reference);
+			}
+
+			// public Task<PEFile> ResolveAsync(IAssemblyReference reference)
+   //          {
+			// 	return Task.Run(() => Resolve(reference));
+   //          }
+
+   //          public MetadataFile ResolveModule(PEFile mainModule, string moduleName)
+			// {
+			// 	return parent.LookupReferencedModule(mainModule, moduleName)?.GetPEFileOrNull();
+			// }
+
+   //          public Task<PEFile> ResolveModuleAsync(PEFile mainModule, string moduleName)
+			// {
+			// 	return Task.Run(() => ResolveModule(mainModule, moduleName));
+			// }
         }
 
 		public IAssemblyResolver GetAssemblyResolver()

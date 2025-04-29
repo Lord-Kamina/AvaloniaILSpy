@@ -46,15 +46,15 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		{
             var token = analyzedEntity.MetadataToken;
             var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition.MetadataToken;
-            var module = analyzedEntity.DeclaringTypeDefinition.ParentModule.PEFile;
+            var module = analyzedEntity.DeclaringTypeDefinition.ParentModule.MetadataFile ;
             var allTypes = type.GetAllBaseTypeDefinitions();
-            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule.PEFile == module))
+            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule.MetadataFile  == module))
                 yield break;
 
 			foreach (var method in type.Methods) {
 				if (!method.IsOverride) continue;
                 var baseMembers = InheritanceHelper.GetBaseMembers(method, false);
-                if (baseMembers.Any(p => p.MetadataToken == token && p.ParentModule.PEFile == module)) {
+                if (baseMembers.Any(p => p.MetadataToken == token && p.ParentModule.MetadataFile  == module)) {
                     yield return method;
 				}
 			}

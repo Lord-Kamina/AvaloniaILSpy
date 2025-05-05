@@ -49,7 +49,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		{
 			if (analyzedType.Kind == TypeKind.Enum
 				&& type.MetadataToken == analyzedType.MetadataToken
-				&& type.ParentModule.MetadataFile  == analyzedType.ParentModule.MetadataFile )
+				&& type.ParentModule?.MetadataFile  == analyzedType.ParentModule?.MetadataFile )
 				yield break;
 
 			if (!context.Language.ShowMember(type))
@@ -57,22 +57,22 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 			var visitor = new TypeDefinitionUsedVisitor(analyzedType, true);
 
-			foreach (IField field in type.Fields) {
+			foreach (var field in type.Fields) {
 				if (TypeIsExposedBy(visitor, field))
 					yield return field;
 			}
 
-			foreach (IProperty property in type.Properties) {
+			foreach (var property in type.Properties) {
 				if (TypeIsExposedBy(visitor, property))
 					yield return property;
 			}
 
-			foreach (IEvent @event in type.Events) {
+			foreach (var @event in type.Events) {
 				if (TypeIsExposedBy(visitor, @event))
 					yield return @event;
 			}
 
-			foreach (IMethod method in type.Methods) {
+			foreach (var method in type.Methods) {
 				if (TypeIsExposedBy(visitor, method))
 					yield return method;
 			}

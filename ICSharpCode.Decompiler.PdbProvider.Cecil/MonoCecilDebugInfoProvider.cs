@@ -75,12 +75,11 @@ namespace ICSharpCode.Decompiler.PdbProvider.Cecil
 						}
 					}
 					var variables = new List<Variable>();
-					foreach (var scope in debugInfo.GetScopes()) {
+					foreach (var scope in debugInfo.GetScopes())
+					{
 						if (!scope.HasVariables)
 							continue;
-						foreach (var v in scope.Variables) {
-							variables.Add(new Variable(v.Index, v.Name));
-						}
+						variables.AddRange(scope.Variables.Select(v => new Variable(v.Index, v.Name)));
 					}
 					this.debugInfo.Add(method, (sequencePoints, variables));
 				}

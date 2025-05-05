@@ -34,9 +34,7 @@ namespace ICSharpCode.TreeView
 
 		private SharpTreeViewTextSearch(SharpTreeView treeView)
 		{
-			if (treeView == null)
-				throw new ArgumentNullException(nameof(treeView));
-			this.treeView = treeView;
+			this.treeView = treeView ?? throw new ArgumentNullException(nameof(treeView));
 			inputStack = new Stack<string>(8);
 			ClearState();
 		}
@@ -44,10 +42,9 @@ namespace ICSharpCode.TreeView
 		public static SharpTreeViewTextSearch GetInstance(SharpTreeView sharpTreeView)
 		{
 			var textSearch = (SharpTreeViewTextSearch)sharpTreeView.GetValue(TextSearchInstanceProperty);
-			if (textSearch == null) {
-				textSearch = new SharpTreeViewTextSearch(sharpTreeView);
-				sharpTreeView.SetValue(TextSearchInstanceProperty, textSearch);
-			}
+			if (textSearch != null) return textSearch;
+			textSearch = new SharpTreeViewTextSearch(sharpTreeView);
+			sharpTreeView.SetValue(TextSearchInstanceProperty, textSearch);
 			return textSearch;
 		}
 
@@ -62,10 +59,10 @@ namespace ICSharpCode.TreeView
 
 		public bool Search(string nextChar)
 		{
-			IList items = (IList)treeView.Items;
-			int startIndex = isActive ? lastMatchIndex : Math.Max(0, treeView.SelectedIndex);
-			bool lookBackwards = inputStack.Count > 0 && string.Compare(inputStack.Peek(), nextChar, StringComparison.OrdinalIgnoreCase) == 0;
-			int nextMatchIndex = IndexOfMatch(matchPrefix + nextChar, startIndex, lookBackwards, out bool wasNewCharUsed);
+			var items = (IList)treeView.Items;
+			var startIndex = isActive ? lastMatchIndex : Math.Max(0, treeView.SelectedIndex);
+			var lookBackwards = inputStack.Count > 0 && string.Compare(inputStack.Peek(), nextChar, StringComparison.OrdinalIgnoreCase) == 0;
+			var nextMatchIndex = IndexOfMatch(matchPrefix + nextChar, startIndex, lookBackwards, out var wasNewCharUsed);
 			if (nextMatchIndex != -1) {
 				if (!isActive || nextMatchIndex != startIndex) {
 					treeView.SelectedItem = items[nextMatchIndex];
@@ -86,19 +83,19 @@ namespace ICSharpCode.TreeView
 
 		int IndexOfMatch(string needle, int startIndex, bool tryBackward, out bool charWasUsed)
 		{
-			IList items = (IList)treeView.Items;
+			var items = (IList)treeView.Items;
 			charWasUsed = false;
 			if (items.Count == 0 || string.IsNullOrEmpty(needle))
 				return -1;
-			int index = -1;
-			int fallbackIndex = -1;
-			bool fallbackMatch = false;
-			int i = startIndex;
+			var index = -1;
+			var fallbackIndex = -1;
+			var fallbackMatch = false;
+			var i = startIndex;
 			var comparisonType = treeView.IsTextSearchCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 			do {
 				var item = (SharpTreeNode)items[i];
-				if (item != null && item.Text != null) {
-					string text = item.Text.ToString();
+				if (item?.Text != null) {
+					var text = item.Text.ToString();
 					if (text.StartsWith(needle, comparisonType)) {
 						charWasUsed = true;
 						index = i;

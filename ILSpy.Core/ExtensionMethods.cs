@@ -29,31 +29,28 @@ namespace ICSharpCode.ILSpy
 	{
 		public static void AddRange<T>(this ICollection<T> list, IEnumerable<T> items)
 		{
-			foreach (T item in items)
+			foreach (var item in items)
 				if (!list.Contains(item))
 					list.Add(item);
 		}
 
 		public static T PeekOrDefault<T>(this Stack<T> stack)
 		{
-			if (stack.Count == 0)
-				return default(T);
-			return stack.Peek();
+			return stack.Count == 0 ? default : stack.Peek();
 		}
 
 		public static int BinarySearch<T>(this IList<T> list, T item, int start, int count, IComparer<T> comparer)
 		{
-			if (list == null)
-				throw new ArgumentNullException(nameof(list));
-			if (start < 0 || start >= list.Count)
+            ArgumentNullException.ThrowIfNull(list);
+            if (start < 0 || start >= list.Count)
 				throw new ArgumentOutOfRangeException(nameof(start), start, "Value must be between 0 and " + (list.Count - 1));
 			if (count < 0 || count > list.Count - start)
 				throw new ArgumentOutOfRangeException(nameof(count), count, "Value must be between 0 and " + (list.Count - start));
-			int end = start + count - 1;
+			var end = start + count - 1;
 			while (start <= end)
 			{
-				int pivot = (start + end) / 2;
-				int result = comparer.Compare(item, list[pivot]);
+				var pivot = (start + end) / 2;
+				var result = comparer.Compare(item, list[pivot]);
 				if (result == 0)
 					return pivot;
 				if (result < 0)
@@ -67,19 +64,17 @@ namespace ICSharpCode.ILSpy
 		public static int BinarySearch<T, TKey>(this IList<T> instance, TKey itemKey, Func<T, TKey> keySelector)
 			where TKey : IComparable<TKey>, IComparable
 		{
-			if (instance == null)
-				throw new ArgumentNullException(nameof(instance));
-			if (keySelector == null)
-				throw new ArgumentNullException(nameof(keySelector));
+            ArgumentNullException.ThrowIfNull(instance);
+            ArgumentNullException.ThrowIfNull(keySelector);
 
-			int start = 0;
-			int end = instance.Count - 1;
+            var start = 0;
+			var end = instance.Count - 1;
 
 			while (start <= end)
 			{
-				int m = (start + end) / 2;
-				TKey key = keySelector(instance[m]);
-				int result = key.CompareTo(itemKey);
+				var m = (start + end) / 2;
+				var key = keySelector(instance[m]);
+				var result = key.CompareTo(itemKey);
 				if (result == 0)
 					return m;
 				if (result < 0)
@@ -108,7 +103,7 @@ namespace ICSharpCode.ILSpy
 			if (!DisplaySettingsPanel.CurrentDisplaySettings.ShowMetadataTokens)
 				return string.Empty;
 
-			int token = System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(handle);
+			var token = System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(handle);
 			if (DisplaySettingsPanel.CurrentDisplaySettings.ShowMetadataTokensInBase10)
 				return " @" + token;
 			return " @" + token.ToString("x8");
@@ -147,7 +142,7 @@ namespace ICSharpCode.ILSpy
 		{
 			if (string.IsNullOrEmpty(s) || length >= s.Length)
 				return s;
-			return s.Substring(0, length) + "...";
+			return s[..length] + "...";
 		}
 
 		/// <summary>
@@ -156,8 +151,8 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		public static U[] SelectArray<T, U>(this ICollection<T> collection, Func<T, U> func)
 		{
-			U[] result = new U[collection.Count];
-			int index = 0;
+			var result = new U[collection.Count];
+			var index = 0;
 			foreach (var element in collection)
 			{
 				result[index++] = func(element);

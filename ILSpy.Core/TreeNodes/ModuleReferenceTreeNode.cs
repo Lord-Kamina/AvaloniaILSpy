@@ -49,28 +49,23 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 			foreach (var h in module.AssemblyFiles) {
 				var file = module.GetAssemblyFile(h);
-				if (module.StringComparer.Equals(file.Name, moduleName)) {
-					this.file = file;
-					this.fileHandle = h;
-					this.containsMetadata = file.ContainsMetadata;
-					break;
-				}
+				if (!module.StringComparer.Equals(file.Name, moduleName)) continue;
+				this.file = file;
+				this.fileHandle = h;
+				this.containsMetadata = file.ContainsMetadata;
+				break;
 			}
 		}
 		
-		public override object Text {
-			get { return moduleName + ((EntityHandle)handle).ToSuffixString(); }
-		}
+		public override object Text => moduleName + ((EntityHandle)handle).ToSuffixString();
 
 		public override object Icon => Images.Library;
 
 		public override void ActivateItem(RoutedEventArgs e)
 		{
-			var assemblyListNode = parentAssembly.Parent as AssemblyListTreeNode;
-			if (assemblyListNode != null && containsMetadata) {
-				assemblyListNode.Select(assemblyListNode.FindAssemblyNode(parentAssembly.LoadedAssembly.LookupReferencedModule(parentAssembly.LoadedAssembly.GetPEFileOrNull(), metadata.GetString(reference.Name))));
-				e.Handled = true;
-			}
+			if (!(parentAssembly.Parent is AssemblyListTreeNode assemblyListNode) || !containsMetadata) return;
+			assemblyListNode.Select(assemblyListNode.FindAssemblyNode(parentAssembly.LoadedAssembly.LookupReferencedModule(parentAssembly.LoadedAssembly.GetPEFileOrNull(), metadata.GetString(reference.Name))));
+			e.Handled = true;
 		}
 
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)

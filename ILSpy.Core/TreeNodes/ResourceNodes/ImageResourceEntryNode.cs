@@ -19,6 +19,7 @@
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using ICSharpCode.Decompiler.Metadata;
@@ -30,25 +31,19 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	[Export(typeof(IResourceNodeFactory))]
 	sealed class ImageResourceNodeFactory : IResourceNodeFactory
 	{
-		static readonly string[] imageFileExtensions = { ".png", ".gif", ".bmp", ".jpg" };
+		private static readonly string[] imageFileExtensions = { ".png", ".gif", ".bmp", ".jpg" };
 
 		public ILSpyTreeNode CreateNode(Resource resource)
 		{
-			Stream stream = resource.TryOpenStream();
-			if (stream == null)
-				return null;
-			return CreateNode(resource.Name, stream);
+			var stream = resource.TryOpenStream();
+			return stream == null ? null : CreateNode(resource.Name, stream);
 		}
 
 		public ILSpyTreeNode CreateNode(string key, object data)
 		{
-			if (!(data is Stream))
+			if (!(data is Stream stream))
 			    return null;
-			foreach (string fileExt in imageFileExtensions) {
-				if (key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase))
-					return new ImageResourceEntryNode(key, (Stream)data);
-			}
-			return null;
+			return imageFileExtensions.Any(fileExt => key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase)) ? new ImageResourceEntryNode(key, stream) : null;
 		}
 	}
 
@@ -59,15 +54,12 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 		}
 
-		public override object Icon
-		{
-			get { return Images.ResourceImage; }
-		}
+		public override object Icon => Images.ResourceImage;
 
 		public override bool View(DecompilerTextView textView)
 		{
 			try {
-				AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+				var output = new AvaloniaEditTextOutput();
 				Data.Position = 0;
                 IBitmap image = new Bitmap(Data);
                 output.AddUIElement(() => new Image { Source = image });

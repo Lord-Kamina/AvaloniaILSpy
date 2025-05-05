@@ -46,22 +46,22 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		IEnumerable<IEntity> AnalyzeType(IMethod analyzedEntity, ITypeDefinition type)
 		{
             var token = analyzedEntity.MetadataToken;
-            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition.MetadataToken;
-            var module = analyzedEntity.DeclaringTypeDefinition.ParentModule.MetadataFile ;
+            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition?.MetadataToken;
+            var module = analyzedEntity.DeclaringTypeDefinition?.ParentModule?.MetadataFile ;
             var allTypes = type.GetAllBaseTypeDefinitions();
-            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule.MetadataFile  == module))
+            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule?.MetadataFile  == module))
                 yield break;
 
             foreach (var method in type.Methods) {
                 var baseMembers = InheritanceHelper.GetBaseMembers(method, true);
-                if (baseMembers.Any(m => m.MetadataToken == token && m.ParentModule.MetadataFile  == module))
+                if (baseMembers.Any(m => m.MetadataToken == token && m.ParentModule?.MetadataFile  == module))
                     yield return method;
 			}
 		}
 
 		public bool Show(ISymbol entity)
 		{
-			return entity is IMethod method && method.DeclaringType.Kind == TypeKind.Interface;
+			return entity is IMethod { DeclaringType: { Kind: TypeKind.Interface } };
 		}
 	}
 }

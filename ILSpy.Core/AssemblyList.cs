@@ -34,8 +34,6 @@ namespace ICSharpCode.ILSpy
 	/// </summary>
 	public sealed class AssemblyList
 	{
-		readonly string listName;
-		
 		/// <summary>Dirty flag, used to mark modifications so that the list is saved later</summary>
 		bool dirty;
 
@@ -55,7 +53,7 @@ namespace ICSharpCode.ILSpy
 		
 		public AssemblyList(string listName)
 		{
-			this.listName = listName;
+			this.ListName = listName;
 			assemblies.CollectionChanged += Assemblies_CollectionChanged;
 		}
 		
@@ -86,52 +84,50 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		internal XElement SaveAsXml()
 		{
-			return new XElement(
-				"List",
-				new XAttribute("name", this.ListName),
-				assemblies.Where(asm => !asm.IsAutoLoaded).Select(asm => new XElement("Assembly", asm.FileName))
-			);
+			lock (assemblies)
+			{
+				return new XElement(
+					"List",
+					new XAttribute("name", this.ListName),
+					assemblies.Where(asm => !asm.IsAutoLoaded).Select(asm => new XElement("Assembly", asm.FileName))
+				);
+			}
 		}
 		
 		/// <summary>
 		/// Gets the name of this list.
 		/// </summary>
-		public string ListName {
-			get { return listName; }
-		}
-		
+		public string ListName { get; }
+
 		void Assemblies_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
 			ClearCache();
 			// Whenever the assembly list is modified, mark it as dirty
 			// and enqueue a task that saves it once the UI has finished modifying the assembly list.
-			if (!dirty) {
-				dirty = true;
-				Dispatcher.UIThread.InvokeAsync(
-					new Action(
-						delegate {
-							dirty = false;
-							AssemblyListManager.SaveList(this);
-							ClearCache();
-						}),
-					DispatcherPriority.Background
-				);
-			}
+			if (dirty) return;
+			dirty = true;
+			Dispatcher.UIThread.InvokeAsync(
+				new Action(
+					delegate {
+						dirty = false;
+						AssemblyListManager.SaveList(this);
+						ClearCache();
+					}),
+				DispatcherPriority.Background
+			);
 		}
 
 		internal void RefreshSave()
 		{
-			if (!dirty) {
-				dirty = true;
-				Dispatcher.UIThread.InvokeAsync(
-					new Action(
-						delegate {
-							dirty = false;
-							AssemblyListManager.SaveList(this);
-						}),
-					DispatcherPriority.Background
-				);
-			}
+			if (dirty) return;
+			dirty = true;
+			Dispatcher.UIThread.InvokeAsync(
+				delegate {
+					dirty = false;
+					AssemblyListManager.SaveList(this);
+				},
+				DispatcherPriority.Background
+			);
 		}
 		
 		internal void ClearCache()
@@ -141,23 +137,18 @@ namespace ICSharpCode.ILSpy
 
 		public LoadedAssembly Open(string assemblyUri, bool isAutoLoaded = false)
 		{
-			if (assemblyUri.StartsWith("nupkg://", StringComparison.OrdinalIgnoreCase)) {
-				string fileName = assemblyUri.Substring("nupkg://".Length);
-				int separator = fileName.LastIndexOf(';');
-				string componentName = null;
-				if (separator > -1) {
-					componentName = fileName.Substring(separator + 1);
-					fileName = fileName.Substring(0, separator);
-					LoadedNugetPackage package = new LoadedNugetPackage(fileName);
-					var entry = package.Entries.FirstOrDefault(e => e.Name == componentName);
-					if (entry != null) {
-						return OpenAssembly(assemblyUri, entry.Stream, true);
-					}
-				}
-				return null;
-			} else {
+			var fileName = assemblyUri["nupkg://".Length..];
+			if (!assemblyUri.StartsWith("nupkg://", StringComparison.OrdinalIgnoreCase))
 				return OpenAssembly(assemblyUri, isAutoLoaded);
-			}
+			var separator = fileName.LastIndexOf(';');
+			string componentName = null;
+			if (separator <= -1) return null;
+			componentName = fileName[(separator + 1)..];
+			fileName = fileName[..separator];
+			var package = new LoadedNugetPackage(fileName);
+			var entry = package.Entries.FirstOrDefault(e => e.Name == componentName);
+			return entry != null ? OpenAssembly(assemblyUri, entry.Stream, true) : null;
+
 		}
 
 		/// <summary>
@@ -170,13 +161,18 @@ namespace ICSharpCode.ILSpy
 			
 			file = Path.GetFullPath(file);
 			
-			foreach (LoadedAssembly asm in this.assemblies) {
-				if (file.Equals(asm.FileName, StringComparison.OrdinalIgnoreCase))
-					return asm;
+			lock (assemblies)
+			{
+				foreach (var asm in this.assemblies) {
+					if (file.Equals(asm.FileName, StringComparison.OrdinalIgnoreCase))
+						return asm;
+				}
 			}
 			
-			var newAsm = new LoadedAssembly(this, file);
-			newAsm.IsAutoLoaded = isAutoLoaded;
+			var newAsm = new LoadedAssembly(this, file)
+			{
+				IsAutoLoaded = isAutoLoaded
+			};
 			lock (assemblies) {
 				this.assemblies.Add(newAsm);
 			}
@@ -190,13 +186,18 @@ namespace ICSharpCode.ILSpy
 		{
 			Dispatcher.UIThread.VerifyAccess();
 
-			foreach (LoadedAssembly asm in this.assemblies) {
-				if (file.Equals(asm.FileName, StringComparison.OrdinalIgnoreCase))
-					return asm;
+			lock (assemblies)
+			{
+				foreach (var asm in this.assemblies) {
+					if (file.Equals(asm.FileName, StringComparison.OrdinalIgnoreCase))
+						return asm;
+				}
 			}
 
-			var newAsm = new LoadedAssembly(this, file, stream);
-			newAsm.IsAutoLoaded = isAutoLoaded;
+			var newAsm = new LoadedAssembly(this, file, stream)
+			{
+				IsAutoLoaded = isAutoLoaded
+			};
 			lock (assemblies) {
 				this.assemblies.Add(newAsm);
 			}
@@ -217,8 +218,10 @@ namespace ICSharpCode.ILSpy
 				return null;
 
 			var index = this.assemblies.IndexOf(target);
-			var newAsm = new LoadedAssembly(this, file, stream);
-			newAsm.IsAutoLoaded = target.IsAutoLoaded;
+			var newAsm = new LoadedAssembly(this, file, stream)
+			{
+				IsAutoLoaded = target.IsAutoLoaded
+			};
 			lock (assemblies) {
 				this.assemblies.Remove(target);
 				this.assemblies.Insert(index, newAsm);
@@ -236,8 +239,10 @@ namespace ICSharpCode.ILSpy
 				return null;
 
 			var index = this.assemblies.IndexOf(target);
-			var newAsm = new LoadedAssembly(this, file);
-			newAsm.IsAutoLoaded = target.IsAutoLoaded;
+			var newAsm = new LoadedAssembly(this, file)
+			{
+				IsAutoLoaded = target.IsAutoLoaded
+			};
 			lock (assemblies) {
 				this.assemblies.Remove(target);
 				this.assemblies.Insert(index, newAsm);
@@ -275,8 +280,8 @@ namespace ICSharpCode.ILSpy
 		public void Sort(int index, int count, IComparer<LoadedAssembly> comparer)
 		{
 			Dispatcher.UIThread.VerifyAccess();
+			var list = new List<LoadedAssembly>(assemblies);
 			lock (assemblies) {
-				List<LoadedAssembly> list = new List<LoadedAssembly>(assemblies);
 				list.Sort(index, Math.Min(count, list.Count - index), comparer);
 				assemblies.Clear();
 				assemblies.AddRange(list);

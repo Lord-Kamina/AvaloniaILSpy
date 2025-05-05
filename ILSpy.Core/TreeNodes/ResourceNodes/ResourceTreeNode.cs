@@ -42,84 +42,63 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		
 		public ResourceTreeNode(Resource r)
 		{
-			if (r == null)
-				throw new ArgumentNullException(nameof(r));
-			this.r = r;
+            ArgumentNullException.ThrowIfNull(r);
+            this.r = r;
 		}
 		
-		public Resource Resource {
-			get { return r; }
-		}
-		
-		public override object Text {
-			get { return r.Name; }
-		}
-		
-		public override object Icon {
-			get { return Images.Resource; }
-		}
-		
+		public Resource Resource => r;
+
+		public override object Text => r.Name;
+
+		public override object Icon => Images.Resource;
+
 		public override FilterResult Filter(FilterSettings settings)
-        {
-            if (settings.ShowApiLevel == ApiVisibility.PublicOnly && (r.Attributes & ManifestResourceAttributes.VisibilityMask) == ManifestResourceAttributes.Private)
+		{
+			if (settings.ShowApiLevel == ApiVisibility.PublicOnly && (r.Attributes & ManifestResourceAttributes.VisibilityMask) == ManifestResourceAttributes.Private)
                 return FilterResult.Hidden;
-			if (settings.SearchTermMatches(r.Name))
-				return FilterResult.Match;
-			else
-				return FilterResult.Hidden;
+			return settings.SearchTermMatches(r.Name) ? FilterResult.Match : FilterResult.Hidden;
 		}
 		
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
 		{
-			language.WriteCommentLine(output, string.Format("{0} ({1}, {2})", r.Name, r.ResourceType, r.Attributes));
-			
-			ISmartTextOutput smartOutput = output as ISmartTextOutput;
-			if (smartOutput != null) {
-                smartOutput.AddButton(Images.Save, Resources.Save, delegate { Save(MainWindow.Instance.TextView); });
-				output.WriteLine();
-			}
+			language.WriteCommentLine(output, $"{r.Name} ({r.ResourceType}, {r.Attributes})");
+
+			if (!(output is ISmartTextOutput smartOutput)) return;
+			smartOutput.AddButton(Images.Save, Resources.Save, delegate { Save(MainWindow.Instance.TextView); });
+			output.WriteLine();
 		}
 		
 		public override bool View(DecompilerTextView textView)
 		{
-			Stream s = Resource.TryOpenStream();
-			if (s != null && s.Length < DecompilerTextView.DefaultOutputLengthLimit) {
-				s.Position = 0;
-				FileType type = GuessFileType.DetectFileType(s);
-				if (type != FileType.Binary) {
-					s.Position = 0;
-					AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
-                    output.Write(new StreamReader(s, Encoding.UTF8).ReadToEnd());
-					string ext;
-					if (type == FileType.Xml)
-						ext = ".xml";
-					else
-						ext = Path.GetExtension(DecompilerTextView.CleanUpName(Resource.Name));
-					textView.ShowNode(output, this, HighlightingManager.Instance.GetDefinitionByExtension(ext));
-					return true;
-				}
-			}
-			return false;
+			var s = Resource.TryOpenStream();
+			if (s == null || s.Length >= DecompilerTextView.DefaultOutputLengthLimit) return false;
+			s.Position = 0;
+			var type = GuessFileType.DetectFileType(s);
+			if (type == FileType.Binary) return false;
+			s.Position = 0;
+			var output = new AvaloniaEditTextOutput();
+			output.Write(new StreamReader(s, Encoding.UTF8).ReadToEnd());
+			var ext = type == FileType.Xml ? ".xml" : Path.GetExtension(DecompilerTextView.CleanUpName(Resource.Name));
+			textView.ShowNode(output, this, HighlightingManager.Instance.GetDefinitionByExtension(ext));
+			return true;
 		}
 		
 	    public override async Task<bool> Save(DecompilerTextView textView)
 		{
-			Stream s = Resource.TryOpenStream();
+			var s = Resource.TryOpenStream();
 			if (s == null)
 				return false;
-            SaveFileDialog dlg = new SaveFileDialog();
-			dlg.Title = "Save file";
-            dlg.InitialFileName = DecompilerTextView.CleanUpName(Resource.Name);
-            var filename = await dlg.ShowAsync(App.Current.GetMainWindow());
-            if (!string.IsNullOrEmpty(filename))
+            var dlg = new SaveFileDialog
             {
-                s.Position = 0;
-                using (var fs = File.OpenWrite(filename))
-                {
-                    s.CopyTo(fs);
-                }
-			}
-			return true;
+	            Title = "Save file",
+	            InitialFileName = DecompilerTextView.CleanUpName(Resource.Name)
+            };
+            var filename = await dlg.ShowAsync(App.Current.GetMainWindow());
+            if (string.IsNullOrEmpty(filename)) return true;
+            s.Position = 0;
+            await using var fs = File.OpenWrite(filename);
+            await s.CopyToAsync(fs);
+            return true;
 		}
 		
 		public static ILSpyTreeNode Create(Resource resource)

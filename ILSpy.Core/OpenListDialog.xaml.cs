@@ -99,50 +99,39 @@ namespace ICSharpCode.ILSpy
 			Close(false);
 		}
 
-		public string SelectedListName
-		{
-			get
-			{
-				return listView.SelectedItem.ToString();
-			}
-		}
+		public string SelectedListName => listView.SelectedItem?.ToString();
 
 		private void CreateDefaultAssemblyLists()
 		{
-			if (!manager.AssemblyLists.Contains(DotNetCoreList))
+			if (manager.AssemblyLists.Contains(DotNetCoreList)) return;
+			var netcore = new AssemblyList(DotNetCoreList);
+			//AddToList(netcore, "System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
+			AddToList(netcore, "netstandard.library");
+			if (netcore.assemblies.Count > 0)
 			{
-				AssemblyList netcore = new AssemblyList(DotNetCoreList);
-				//AddToList(netcore, "System.Private.CoreLib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e");
-				AddToList(netcore, "netstandard.library");
-				if (netcore.assemblies.Count > 0)
-				{
-					manager.CreateList(netcore);
-				}
+				manager.CreateList(netcore);
 			}
 		}
 
 		private void AddToList(AssemblyList list, string name)
 		{
 			//AssemblyNameReference reference = AssemblyNameReference.Parse(FullName);
-			string file = typeof(string).Assembly.Location;
-			if (file != null)
-				list.OpenAssembly(file);
+			var file = typeof(string).Assembly.Location;
+			list.OpenAssembly(file);
 		}
 
 		private async void CreateButton_Click(object sender, RoutedEventArgs e)
 		{
-			CreateListDialog dlg = new CreateListDialog();
-			dlg.Title = "Create List";
+			var dlg = new CreateListDialog
+			{
+				Title = "Create List"
+			};
 			dlg.Closing += (s, args) =>
 			{
-				if (dlg.DialogResult == true)
-				{
-					if (manager.AssemblyLists.Contains(dlg.NewListName))
-					{
-						args.Cancel = true;
-						MessageBox.Show("A list with the same name was found.", "Error!", MessageBoxButton.OK);
-					}
-				}
+				if (dlg.DialogResult != true) return;
+				if (!manager.AssemblyLists.Contains(dlg.NewListName)) return;
+				args.Cancel = true;
+				MessageBox.Show("A list with the same name was found.", "Error!", MessageBoxButton.OK);
 			};
 			if (await dlg.ShowDialog<bool>(this) == true)
 			{

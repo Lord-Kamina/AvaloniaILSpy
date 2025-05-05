@@ -76,37 +76,30 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			Debug.Assert(analyzedSymbol is IField);
 			var scope = context.GetScopeOf((IEntity)analyzedSymbol);
 			foreach (var type in scope.GetTypesInScope(context.CancellationToken)) {
-				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule.MetadataFile , type.MetadataToken);
+				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule?.MetadataFile , type.MetadataToken);
 				var methods = type.GetMembers(m => m is IMethod, Options).OfType<IMethod>();
 				foreach (var method in methods) {
 					if (IsUsedInMethod((IField)analyzedSymbol, method, mappingInfo, context))
 						yield return method;
 				}
 
-				foreach (var property in type.Properties) {
-					if (property.CanGet && IsUsedInMethod((IField)analyzedSymbol, property.Getter, mappingInfo, context)) {
-						yield return property;
-						continue;
-					}
-					if (property.CanSet && IsUsedInMethod((IField)analyzedSymbol, property.Setter, mappingInfo, context)) {
-						yield return property;
-						continue;
-					}
+				foreach (var property in type.Properties)
+				{
+					if ((!property.CanGet ||
+					     !IsUsedInMethod((IField)analyzedSymbol, property.Getter, mappingInfo, context)) &&
+					    (!property.CanSet ||
+					     !IsUsedInMethod((IField)analyzedSymbol, property.Setter, mappingInfo, context))) continue;
+					yield return property;
 				}
 
-				foreach (var @event in type.Events) {
-					if (@event.CanAdd && IsUsedInMethod((IField)analyzedSymbol, @event.AddAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
-					if (@event.CanRemove && IsUsedInMethod((IField)analyzedSymbol, @event.RemoveAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
-					if (@event.CanInvoke && IsUsedInMethod((IField)analyzedSymbol, @event.InvokeAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
+				foreach (var @event in type.Events)
+				{
+					if ((!@event.CanAdd ||
+					     !IsUsedInMethod((IField)analyzedSymbol, @event.AddAccessor, mappingInfo, context)) &&
+					    (!@event.CanRemove || !IsUsedInMethod((IField)analyzedSymbol, @event.RemoveAccessor,
+						    mappingInfo, context)) && (!@event.CanInvoke || !IsUsedInMethod((IField)analyzedSymbol,
+						    @event.InvokeAccessor, mappingInfo, context))) continue;
+					yield return @event;
 				}
 			}
 		}
@@ -115,7 +108,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		{
 			if (method.MetadataToken.IsNil)
 				return false;
-			var module = (PEFile)method.ParentModule.MetadataFile ;
+			if (!(method.ParentModule?.MetadataFile is PEFile module)) return false;
 			foreach (var part in mappingInfo.GetMethodParts((MethodDefinitionHandle)method.MetadataToken)) {
 				var md = module.Metadata.GetMethodDefinition(part);
 				if (!md.HasBody()) continue;
@@ -151,12 +144,12 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 				} catch (BadImageFormatException) {
 					return false;
 				}
-				EntityHandle fieldHandle = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
+				var fieldHandle = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
 				if (!fieldHandle.Kind.IsMemberKind())
 					continue;
 				IField field;
 				try {
-					field = mainModule.ResolveEntity(fieldHandle, genericContext) as IField;
+					field = mainModule?.ResolveEntity(fieldHandle, genericContext) as IField;
 				} catch (BadImageFormatException) {
 					continue;
 				}
@@ -164,7 +157,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 					continue;
 
 				if (field.MetadataToken == analyzedField.MetadataToken
-					&& field.ParentModule.MetadataFile  == analyzedField.ParentModule.MetadataFile )
+					&& field.ParentModule?.MetadataFile  == analyzedField.ParentModule?.MetadataFile )
 					return true;
 			}
 
@@ -173,19 +166,18 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 		bool CanBeReference(ILOpCode code)
 		{
-			switch (code) {
-				case ILOpCode.Ldfld:
-				case ILOpCode.Ldsfld:
-					return !showWrites;
-				case ILOpCode.Stfld:
-				case ILOpCode.Stsfld:
-					return showWrites;
-				case ILOpCode.Ldflda:
-				case ILOpCode.Ldsflda:
-					return true; // always show address-loading
-				default:
-					return false;
-			}
+			return code switch
+			{
+				ILOpCode.Ldfld => !showWrites,
+				ILOpCode.Ldsfld => !showWrites,
+				ILOpCode.Stfld => showWrites,
+				ILOpCode.Stsfld => showWrites,
+				ILOpCode.Ldflda => true // always show address-loading
+				,
+				ILOpCode.Ldsflda => true // always show address-loading
+				,
+				_ => false
+			};
 		}
 	}
 }

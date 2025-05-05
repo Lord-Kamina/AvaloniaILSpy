@@ -31,7 +31,7 @@ namespace ICSharpCode.ILSpy
 		
 		public static Task<T> FromResult<T>(T result)
 		{
-			TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
+			var tcs = new TaskCompletionSource<T>();
 			tcs.SetResult(result);
 			return tcs.Task;
 		}
@@ -92,37 +92,32 @@ namespace ICSharpCode.ILSpy
 		
 		public static Task Then<T>(this Task<T> task, Action<T> action)
 		{
-			if (action == null)
-				throw new ArgumentNullException(nameof(action));
-			return task.ContinueWith(t => action(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
+            ArgumentNullException.ThrowIfNull(action);
+            return task.ContinueWith(t => action(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
 		}
 
 		public static Task<U> Then<T, U>(this Task<T> task, Func<T, U> func)
 		{
-			if (func == null)
-				throw new ArgumentNullException(nameof(func));
-			return task.ContinueWith(t => func(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
+            ArgumentNullException.ThrowIfNull(func);
+            return task.ContinueWith(t => func(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
 		}
 
 		public static Task Then<T>(this Task<T> task, Func<T, Task> asyncFunc)
 		{
-			if (asyncFunc == null)
-				throw new ArgumentNullException(nameof(asyncFunc));
-			return task.ContinueWith(t => asyncFunc(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
+            ArgumentNullException.ThrowIfNull(asyncFunc);
+            return task.ContinueWith(t => asyncFunc(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
 		}
 
 		public static Task<U> Then<T, U>(this Task<T> task, Func<T, Task<U>> asyncFunc)
 		{
-			if (asyncFunc == null)
-				throw new ArgumentNullException(nameof(asyncFunc));
-			return task.ContinueWith(t => asyncFunc(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
+            ArgumentNullException.ThrowIfNull(asyncFunc);
+            return task.ContinueWith(t => asyncFunc(t.Result), CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
 		}
 
 		public static Task Then(this Task task, Action action)
 		{
-			if (action == null)
-				throw new ArgumentNullException(nameof(action));
-			return task.ContinueWith(t => {
+            ArgumentNullException.ThrowIfNull(action);
+            return task.ContinueWith(t => {
 				t.Wait();
 				action();
 			}, CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
@@ -130,9 +125,8 @@ namespace ICSharpCode.ILSpy
 
 		public static Task<U> Then<U>(this Task task, Func<U> func)
 		{
-			if (func == null)
-				throw new ArgumentNullException(nameof(func));
-			return task.ContinueWith(t => {
+            ArgumentNullException.ThrowIfNull(func);
+            return task.ContinueWith(t => {
 				t.Wait();
 				return func();
 			}, CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
@@ -140,9 +134,8 @@ namespace ICSharpCode.ILSpy
 
 		public static Task Then(this Task task, Func<Task> asyncAction)
 		{
-			if (asyncAction == null)
-				throw new ArgumentNullException(nameof(asyncAction));
-			return task.ContinueWith(t => {
+            ArgumentNullException.ThrowIfNull(asyncAction);
+            return task.ContinueWith(t => {
 				t.Wait();
 				return asyncAction();
 			}, CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
@@ -150,9 +143,8 @@ namespace ICSharpCode.ILSpy
 
 		public static Task<U> Then<U>(this Task task, Func<Task<U>> asyncFunc)
 		{
-			if (asyncFunc == null)
-				throw new ArgumentNullException(nameof(asyncFunc));
-			return task.ContinueWith(t => {
+            ArgumentNullException.ThrowIfNull(asyncFunc);
+            return task.ContinueWith(t => {
 				t.Wait();
 				return asyncFunc();
 			}, CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext()).Unwrap();
@@ -168,19 +160,18 @@ namespace ICSharpCode.ILSpy
 		/// </returns>
 		public static Task Catch<TException>(this Task task, Action<TException> action) where TException : Exception
 		{
-			if (action == null)
-				throw new ArgumentNullException(nameof(action));
-			return task.ContinueWith(t => {
-				if (t.IsFaulted) {
-					Exception ex = t.Exception;
-					while (ex is AggregateException)
-						ex = ex.InnerException;
-					if (ex is TException)
-						action((TException)ex);
-					else
-						throw t.Exception;
-				}
-			}, CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
+            ArgumentNullException.ThrowIfNull(action);
+            return task.ContinueWith(t =>
+            {
+	            if (!t.IsFaulted) return;
+	            Exception ex = t.Exception;
+	            while (ex is AggregateException)
+		            ex = ex.InnerException;
+	            if (ex is TException exception)
+		            action(exception);
+	            else
+		            throw t.Exception;
+            }, CancellationToken.None, TaskContinuationOptions.NotOnCanceled, TaskScheduler.FromCurrentSynchronizationContext());
 		}
 		
 		/// <summary>
@@ -196,7 +187,7 @@ namespace ICSharpCode.ILSpy
 		public static void HandleExceptions(this Task task)
 		{
 			task.Catch<Exception>(exception => Dispatcher.UIThread.InvokeAsync(new Action(delegate {
-				AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+				var output = new AvaloniaEditTextOutput();
 				output.Write(exception.ToString());
 				MainWindow.Instance.TextView.ShowText(output);
 			}))).IgnoreExceptions();

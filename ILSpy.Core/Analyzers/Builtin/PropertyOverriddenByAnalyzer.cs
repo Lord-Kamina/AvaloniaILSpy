@@ -46,16 +46,16 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		IEnumerable<IEntity> AnalyzeType(IProperty analyzedEntity, ITypeDefinition type)
 		{
             var token = analyzedEntity.MetadataToken;
-            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition.MetadataToken;
-            var module = analyzedEntity.DeclaringTypeDefinition.ParentModule.MetadataFile ;
+            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition?.MetadataToken;
+            var module = analyzedEntity.DeclaringTypeDefinition?.ParentModule?.MetadataFile ;
             var allTypes = type.GetAllBaseTypeDefinitions();
-            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule.MetadataFile  == module))
+            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule?.MetadataFile  == module))
                 yield break;
 
 			foreach (var property in type.Properties) {
 				if (!property.IsOverride) continue;
                 var baseMembers = InheritanceHelper.GetBaseMembers(property, false);
-                if (baseMembers.Any(p => p.MetadataToken == token && p.ParentModule.MetadataFile  == module)) {
+                if (baseMembers.Any(p => p.MetadataToken == token && p.ParentModule?.MetadataFile  == module)) {
                     yield return property;
 				}
 			}
@@ -63,7 +63,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 		public bool Show(ISymbol entity)
 		{
-			return entity is IProperty property && property.IsOverridable && property.DeclaringType.Kind != TypeKind.Interface;
+			return entity is IProperty { IsOverridable: true } property && property.DeclaringType.Kind != TypeKind.Interface;
 		}
 	}
 }

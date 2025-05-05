@@ -35,27 +35,20 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 		public FilterSettings FilterSettings
 		{
-			get { return filterSettings; }
+			get => filterSettings;
 			set
 			{
-				if (filterSettings != value) {
-					filterSettings = value;
-					OnFilterSettingsChanged();
-				}
+				if (filterSettings == value) return;
+				filterSettings = value;
+				OnFilterSettingsChanged();
 			}
 		}
 
-		public Language Language
-		{
-			get { return filterSettings != null ? filterSettings.Language : Languages.AllLanguages[0]; }
-		}
+		public Language Language => filterSettings != null ? filterSettings.Language : Languages.AllLanguages[0];
 
 		public virtual FilterResult Filter(FilterSettings settings)
 		{
-			if (string.IsNullOrEmpty(settings.SearchTerm))
-				return FilterResult.Match;
-			else
-				return FilterResult.Hidden;
+			return string.IsNullOrEmpty(settings.SearchTerm) ? FilterResult.Match : FilterResult.Hidden;
 		}
 
 		public abstract void Decompile(Language language, ITextOutput output, DecompilationOptions options);
@@ -96,10 +89,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		void ApplyFilterToChild(ILSpyTreeNode child)
 		{
 			FilterResult r;
-			if (this.FilterSettings == null)
-				r = FilterResult.Match;
-			else
-				r = child.Filter(this.FilterSettings);
+			r = this.FilterSettings == null ? FilterResult.Match : child.Filter(this.FilterSettings);
 			switch (r) {
 				case FilterResult.Hidden:
 					child.IsHidden = true;
@@ -127,10 +117,9 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			if (filterSettings == null)
 				return null;
-			if (!string.IsNullOrEmpty(filterSettings.SearchTerm)) {
-				filterSettings = filterSettings.Clone();
-				filterSettings.SearchTerm = null;
-			}
+			if (string.IsNullOrEmpty(filterSettings.SearchTerm)) return filterSettings;
+			filterSettings = filterSettings.Clone();
+			filterSettings.SearchTerm = null;
 			return filterSettings;
 		}
 
@@ -138,7 +127,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			RaisePropertyChanged("Text");
 			if (IsVisible) {
-				foreach (ILSpyTreeNode node in this.Children.OfType<ILSpyTreeNode>())
+				foreach (var node in this.Children.OfType<ILSpyTreeNode>())
 					ApplyFilterToChild(node);
 			} else {
 				childrenNeedFiltering = true;
@@ -154,34 +143,24 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		internal void EnsureChildrenFiltered()
 		{
 			EnsureLazyChildren();
-			if (childrenNeedFiltering) {
-				childrenNeedFiltering = false;
-				foreach (ILSpyTreeNode node in this.Children.OfType<ILSpyTreeNode>())
-					ApplyFilterToChild(node);
-			}
+			if (!childrenNeedFiltering) return;
+			childrenNeedFiltering = false;
+			foreach (var node in this.Children.OfType<ILSpyTreeNode>())
+				ApplyFilterToChild(node);
 		}
 		
-		public virtual bool IsPublicAPI {
-			get { return true; }
-		}
+		public virtual bool IsPublicAPI => true;
 
-		public virtual bool IsAutoLoaded
-		{
-			get { return false; }
-		}
-		
+		public virtual bool IsAutoLoaded => false;
+
 		public override Avalonia.Media.IBrush Foreground {
-			get {
+			get
+			{
 				if (IsPublicAPI)
-					if (IsAutoLoaded) {
+					return IsAutoLoaded ?
 						// HACK: should not be hard coded?
-						return Avalonia.Media.Brushes.SteelBlue;
-					}
-					else {
-						return base.Foreground;
-					}
-				else
-					return Avalonia.SystemColors.GrayTextBrush;
+						Avalonia.Media.Brushes.SteelBlue : base.Foreground;
+				return Avalonia.SystemColors.GrayTextBrush;
 			}
 		}
 	}

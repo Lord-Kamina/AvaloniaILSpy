@@ -29,31 +29,21 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	{
 		readonly string name;
 		
-		public string Name {
-			get { return name; }
-		}
-		
+		public string Name => name;
+
 		public NamespaceTreeNode(string name)
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name));
-			this.name = name;
+            ArgumentNullException.ThrowIfNull(name);
+            this.name = name;
 		}
 		
-		public override object Text {
-			get { return name.Length == 0 ? "-" : name; }
-		}
-		
-		public override object Icon {
-			get { return Images.Namespace; }
-		}
-		
+		public override object Text => name.Length == 0 ? "-" : name;
+
+		public override object Icon => Images.Namespace;
+
 		public override FilterResult Filter(FilterSettings settings)
 		{
-			if (settings.SearchTermMatches(name))
-				return FilterResult.MatchAndRecurse;
-			else
-				return FilterResult.Recurse;
+			return settings.SearchTermMatches(name) ? FilterResult.MatchAndRecurse : FilterResult.Recurse;
 		}
 		
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)

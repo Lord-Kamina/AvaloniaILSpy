@@ -81,15 +81,15 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		}
 
 		public override bool IsPublicAPI {
-			get {
-				switch (PropertyDefinition.Accessibility) {
-					case Accessibility.Public:
-					case Accessibility.ProtectedOrInternal:
-					case Accessibility.Protected:
-						return true;
-					default:
-						return false;
-				}
+			get
+			{
+				return PropertyDefinition.Accessibility switch
+				{
+					Accessibility.Public => true,
+					Accessibility.ProtectedOrInternal => true,
+					Accessibility.Protected => true,
+					_ => false
+				};
 			}
 		}
 

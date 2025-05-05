@@ -37,16 +37,15 @@ namespace ICSharpCode.ILSpy
 	{
 		public SessionSettings(ILSpySettings spySettings)
 		{
-			XElement doc = spySettings["SessionSettings"];
+			var doc = spySettings["SessionSettings"];
 			
-			XElement filterSettings = doc.Element("FilterSettings");
-			if (filterSettings == null) filterSettings = new XElement("FilterSettings");
-			
+			var filterSettings = doc.Element("FilterSettings") ?? new XElement("FilterSettings");
+
 			this.FilterSettings = new FilterSettings(filterSettings);
 			
 			this.ActiveAssemblyList = (string)doc.Element("ActiveAssemblyList");
 			
-			XElement activeTreeViewPath = doc.Element("ActiveTreeViewPath");
+			var activeTreeViewPath = doc.Element("ActiveTreeViewPath");
 			if (activeTreeViewPath != null) {
 				this.ActiveTreeViewPath = activeTreeViewPath.Elements().Select(e => Unescape((string)e)).ToArray();
 			}
@@ -65,8 +64,7 @@ namespace ICSharpCode.ILSpy
 		
 		void OnPropertyChanged(string propertyName)
 		{
-			if (PropertyChanged != null)
-				PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 		}
 		
 		public FilterSettings FilterSettings { get; private set; }
@@ -89,7 +87,7 @@ namespace ICSharpCode.ILSpy
 		
 		public void Save()
 		{
-			XElement doc = new XElement("SessionSettings");
+			var doc = new XElement("SessionSettings");
 			doc.Add(this.FilterSettings.SaveAsXml());
 			if (this.ActiveAssemblyList != null) {
 				doc.Add(new XElement("ActiveAssemblyList", this.ActiveAssemblyList));
@@ -111,13 +109,13 @@ namespace ICSharpCode.ILSpy
 
 			ILSpySettings.SaveSettings(doc);
 		}
-		
-		static Regex regex = new Regex("\\\\x(?<num>[0-9A-f]{4})");
+
+		private static readonly Regex regex = new Regex("\\\\x(?<num>[0-9A-f]{4})");
 		
 		static string Escape(string p)
 		{
-			StringBuilder sb = new StringBuilder();
-			foreach (char ch in p) {
+			var sb = new StringBuilder();
+			foreach (var ch in p) {
 				if (char.IsLetterOrDigit(ch))
 					sb.Append(ch);
 				else
@@ -136,7 +134,7 @@ namespace ICSharpCode.ILSpy
 			if (s == null)
 				return defaultValue;
 			try {
-				TypeConverter c = TypeDescriptor.GetConverter(typeof(T));
+				var c = TypeDescriptor.GetConverter(typeof(T));
 				return (T)c.ConvertFromInvariantString(s);
 			} catch (FormatException) {
 				return defaultValue;
@@ -145,14 +143,12 @@ namespace ICSharpCode.ILSpy
 
 		static Rect FromString(string s, Rect defaultValue)
 		{
-			if (s == null)
-				return defaultValue;
-			return Rect.Parse(s);
+			return s == null ? defaultValue : Rect.Parse(s);
 		}
 		
 		static string ToString<T>(T obj)
 		{
-			TypeConverter c = TypeDescriptor.GetConverter(typeof(T));
+			var c = TypeDescriptor.GetConverter(typeof(T));
 			return c.ConvertToInvariantString(obj);
 		}
 	}

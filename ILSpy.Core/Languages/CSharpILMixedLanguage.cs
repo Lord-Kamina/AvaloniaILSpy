@@ -57,7 +57,7 @@ namespace ICSharpCode.ILSpy
 
 		static CSharpDecompiler CreateDecompiler(PEFile module, DecompilationOptions options)
 		{
-			CSharpDecompiler decompiler = new CSharpDecompiler(module, module.GetAssemblyResolver(), options.DecompilerSettings);
+			var decompiler = new CSharpDecompiler(module, module.GetAssemblyResolver(), options.DecompilerSettings);
 			decompiler.CancellationToken = options.CancellationToken;
 			return decompiler;
 		}
@@ -88,7 +88,7 @@ namespace ICSharpCode.ILSpy
 			{
 				try {
 					var csharpOutput = new StringWriter();
-					CSharpDecompiler decompiler = CreateDecompiler((PEFile)module, options);
+					var decompiler = CreateDecompiler((PEFile)module, options);
 					var st = decompiler.Decompile(handle);
 					WriteCode(csharpOutput, options.DecompilerSettings, st, decompiler.TypeSystem);
 					var mapping = decompiler.CreateSequencePoints(st).FirstOrDefault(kvp => (kvp.Key.MoveNextMethod ?? kvp.Key.Method).MetadataToken == handle);
@@ -103,16 +103,16 @@ namespace ICSharpCode.ILSpy
 			protected override void WriteInstruction(ITextOutput output, MetadataFile metadataFile, MethodDefinitionHandle methodHandle,
 				ref BlobReader blob, int methodRva)
 			{
-				int index = sequencePoints.BinarySearch(blob.Offset, seq => seq.Offset);
+				var index = sequencePoints.BinarySearch(blob.Offset, seq => seq.Offset);
 				if (index >= 0) {
 					var info = sequencePoints[index];
 					var highlightingOutput = output as ISmartTextOutput;
 					if (!info.IsHidden) {
-						for (int line = info.StartLine; line <= info.EndLine; line++) {
+						for (var line = info.StartLine; line <= info.EndLine; line++) {
 							if (highlightingOutput != null) {
-								string text = codeLines[line - 1];
-								int startColumn = 1;
-								int endColumn = text.Length + 1;
+								var text = codeLines[line - 1];
+								var startColumn = 1;
+								var endColumn = text.Length + 1;
 								if (line == info.StartLine)
 									startColumn = info.StartColumn;
 								if (line == info.EndLine)
@@ -146,10 +146,9 @@ namespace ICSharpCode.ILSpy
 				}
 				output.Write("// ");
 				output.BeginSpan(gray);
-				if (isSingleLine)
-					output.Write(text.Substring(0, startColumn).TrimStart());
-				else
-					output.Write(text.Substring(0, startColumn));
+				output.Write(isSingleLine
+					? text.Substring(0, startColumn).TrimStart()
+					: text.Substring(0, startColumn));
 				output.EndSpan();
 				output.Write(text.Substring(startColumn, endColumn - startColumn));
 				output.BeginSpan(gray);

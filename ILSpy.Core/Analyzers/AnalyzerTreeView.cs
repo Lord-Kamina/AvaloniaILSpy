@@ -39,10 +39,9 @@ namespace ICSharpCode.ILSpy.Analyzers
 		{
 			get
 			{
-				if (instance == null) {
-					Dispatcher.UIThread.VerifyAccess();
-					instance = new AnalyzerTreeView();
-				}
+				if (instance != null) return instance;
+				Dispatcher.UIThread.VerifyAccess();
+				instance = new AnalyzerTreeView();
 				return instance;
 			}
 		}
@@ -61,10 +60,10 @@ namespace ICSharpCode.ILSpy.Analyzers
 			if (e.Action == NotifyCollectionChangedAction.Reset) {
 				this.Root.Children.Clear();
 			} else {
-				List<LoadedAssembly> removedAssemblies = new List<LoadedAssembly>();
+				var removedAssemblies = new List<LoadedAssembly>();
 				if (e.OldItems != null)
 					removedAssemblies.AddRange(e.OldItems.Cast<LoadedAssembly>());
-				List<LoadedAssembly> addedAssemblies = new List<LoadedAssembly>();
+				var addedAssemblies = new List<LoadedAssembly>();
 				if (e.NewItems != null)
 					addedAssemblies.AddRange(e.NewItems.Cast<LoadedAssembly>());
 				((AnalyzerRootNode)this.Root).HandleAssemblyListChanged(removedAssemblies, addedAssemblies);
@@ -89,9 +88,8 @@ namespace ICSharpCode.ILSpy.Analyzers
 
 		public void ShowOrFocus(AnalyzerTreeNode node)
 		{
-			if (node is AnalyzerEntityTreeNode) {
-				var an = node as AnalyzerEntityTreeNode;
-				var found = this.Root.Children.OfType<AnalyzerEntityTreeNode>().FirstOrDefault(n => n.Member == an.Member);
+			if (node is AnalyzerEntityTreeNode an) {
+				var found = this.Root.Children.OfType<AnalyzerEntityTreeNode>().FirstOrDefault(n => Equals(n.Member, an.Member));
 				if (found != null) {
 					Show();
 					
@@ -106,9 +104,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 
 		public void Analyze(IEntity entity)
 		{
-			if (entity == null) {
-				throw new ArgumentNullException(nameof(entity));
-			}
+            ArgumentNullException.ThrowIfNull(entity);
 
             if (entity.MetadataToken.IsNil)
             {
@@ -138,7 +134,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 			}
 		}
 
-		void IPane.Closed()
+        public void Closed()
 		{
 			this.Root.Children.Clear();
 		}
@@ -149,7 +145,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 			{
 				this.Children.RemoveAll(
 					delegate(SharpTreeNode n) {
-						AnalyzerTreeNode an = n as AnalyzerTreeNode;
+						var an = n as AnalyzerTreeNode;
 						return an == null || !an.HandleAssemblyListChanged(removedAssemblies, addedAssemblies);
 					});
 				return true;

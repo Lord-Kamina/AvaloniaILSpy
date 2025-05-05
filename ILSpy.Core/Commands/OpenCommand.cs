@@ -23,7 +23,7 @@ namespace ICSharpCode.ILSpy
 {
     [ExportToolbarCommand(ToolTip = nameof(Resources.Open), ToolbarIcon = "Images/Open.png", ToolbarCategory = nameof(Resources.Open), ToolbarOrder = 0)]
     [ExportMainMenuCommand(Menu = nameof(Resources._File), Header = nameof(Resources._Open), MenuIcon = "Images/Open.png", MenuCategory = nameof(Resources.Open), MenuOrder = 0)]
-    sealed class OpenCommand : CommandWrapper
+    internal sealed class OpenCommand : CommandWrapper
 	{
 		public OpenCommand()
 			: base(ApplicationCommands.Open)

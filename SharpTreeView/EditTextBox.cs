@@ -14,9 +14,7 @@ namespace ICSharpCode.TreeView
 	{
 		public SharpTreeViewItem Item { get; set; }
 
-		public SharpTreeNode Node {
-			get { return Item.Node; }
-		}
+		public SharpTreeNode Node => Item.Node;
 
 		protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
 		{
@@ -33,10 +31,14 @@ namespace ICSharpCode.TreeView
 
 		protected override void OnKeyDown(KeyEventArgs e)
 		{
-			if (e.Key == Key.Enter) {
-				Commit();
-			} else if (e.Key == Key.Escape) {
-				Node.IsEditing = false;
+			switch (e.Key)
+			{
+				case Key.Enter:
+					Commit();
+					break;
+				case Key.Escape:
+					Node.IsEditing = false;
+					break;
 			}
 		}
 
@@ -51,25 +53,24 @@ namespace ICSharpCode.TreeView
 
 		void Commit()
 		{
-			if (!commiting) {
-				commiting = true;
+			if (commiting) return;
+			commiting = true;
 
-				Node.IsEditing = false;
-				if (!Node.SaveEditText(Text)) {
-					Item.Focus();
-				}
-				Node.RaisePropertyChanged("Text");
-
-				//if (Node.SaveEditText(Text)) {
-				//    Node.IsEditing = false;
-				//    Node.RaisePropertyChanged("Text");
-				//}
-				//else {
-				//    Init();
-				//}
-
-				commiting = false;
+			Node.IsEditing = false;
+			if (!Node.SaveEditText(Text)) {
+				Item.Focus();
 			}
+			Node.RaisePropertyChanged("Text");
+
+			//if (Node.SaveEditText(Text)) {
+			//    Node.IsEditing = false;
+			//    Node.RaisePropertyChanged("Text");
+			//}
+			//else {
+			//    Init();
+			//}
+
+			commiting = false;
 		}
 	}
 }

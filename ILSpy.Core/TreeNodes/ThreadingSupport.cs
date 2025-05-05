@@ -23,6 +23,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Avalonia;
 using Avalonia.Threading;
 using ICSharpCode.Decompiler;
 using ICSharpCode.ILSpy.Analyzers;
@@ -39,10 +40,8 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		Task<List<SharpTreeNode>> loadChildrenTask;
 		CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 		
-		public bool IsRunning {
-			get { return loadChildrenTask != null && !loadChildrenTask.IsCompleted; }
-		}
-		
+		public bool IsRunning => loadChildrenTask != null && !loadChildrenTask.IsCompleted;
+
 		public void Cancel()
 		{
 			cancellationTokenSource.Cancel();
@@ -57,25 +56,25 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			node.Children.Add(new LoadingTreeNode());
 			
-			CancellationToken ct = cancellationTokenSource.Token;
+			var ct = cancellationTokenSource.Token;
 			
 			var fetchChildrenEnumerable = fetchChildren(ct);
 			Task<List<SharpTreeNode>> thisTask = null;
 			thisTask = new Task<List<SharpTreeNode>>(
 				delegate {
-					List<SharpTreeNode> result = new List<SharpTreeNode>();
-					foreach (SharpTreeNode child in fetchChildrenEnumerable) {
+					var result = new List<SharpTreeNode>();
+					foreach (var child in fetchChildrenEnumerable) {
 						ct.ThrowIfCancellationRequested();
 						result.Add(child);
 						var newChild = child;
-						Dispatcher.UIThread.InvokeAsync(new Action(
-							delegate () {
-								// don't access "child" here the
-								// background thread might already be running the next loop iteration
-								if (loadChildrenTask == thisTask) {
-									node.Children.Insert(node.Children.Count - 1, newChild);
-								}
-							}), DispatcherPriority.Normal);
+						Dispatcher.UIThread.InvokeAsync(delegate
+						{
+							// don't access "child" here the
+							// background thread might already be running the next loop iteration
+							if (loadChildrenTask == thisTask) {
+								node.Children.Insert(node.Children.Count - 1, newChild);
+							}
+						}, DispatcherPriority.Normal);
 					}
 					return result;
 				}, ct);
@@ -89,14 +88,14 @@ namespace ICSharpCode.ILSpy.TreeNodes
 								node.Children.RemoveAt(node.Children.Count - 1); // remove 'Loading...'
 								node.RaisePropertyChanged(nameof(node.Text));
 							}
-							if (continuation.Exception != null) { // observe exception even when task isn't current
-								if (loadChildrenTask == thisTask) {
-									foreach (Exception ex in continuation.Exception.InnerExceptions) {
-										node.Children.Add(new ErrorTreeNode(ex.ToString()));
-									}
-								}
+
+							if (continuation.Exception ==
+							    null) return; // observe exception even when task isn't current
+							if (loadChildrenTask != thisTask) return;
+							foreach (var ex in continuation.Exception.InnerExceptions) {
+								node.Children.Add(new ErrorTreeNode(ex.ToString()));
 							}
-						}), DispatcherPriority.Normal);
+                        }), DispatcherPriority.Normal);
         });
 			
 			// Give the task a bit time to complete before we return to WPF - this keeps "Loading..."
@@ -111,20 +110,18 @@ namespace ICSharpCode.ILSpy.TreeNodes
 				Dispatcher.UIThread.InvokeAsync(ensureLazyChildren, DispatcherPriority.Normal);
 				loadChildrenTask = this.loadChildrenTask;
 			}
-			if (loadChildrenTask != null) {
-				foreach (ILSpyTreeNode child in loadChildrenTask.Result.Cast<ILSpyTreeNode>()) {
-					child.Decompile(language, output, options);
-				}
+
+			if (loadChildrenTask == null) return;
+			foreach (var child in loadChildrenTask.Result.Cast<ILSpyTreeNode>()) {
+				child.Decompile(language, output, options);
 			}
 		}
 		
 		sealed class LoadingTreeNode : ILSpyTreeNode
 		{
-			public override object Text {
-                get { return Resources.Loading; }
-            }
+			public override object Text => Resources.Loading;
 
-            public override FilterResult Filter(FilterSettings settings)
+			public override FilterResult Filter(FilterSettings settings)
 			{
 				return FilterResult.Match;
 			}
@@ -138,10 +135,8 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			readonly string text;
 			
-			public override object Text {
-				get { return text; }
-			}
-			
+			public override object Text => text;
+
 			public ErrorTreeNode(string text)
 			{
 				this.text = text;
@@ -162,9 +157,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			public bool IsVisible(TextViewContext context)
 			{
-				if (context.SelectedTreeNodes != null && context.SelectedTreeNodes.All(n => n is ErrorTreeNode))
-					return true;
-				return false;
+				return context.SelectedTreeNodes != null && context.SelectedTreeNodes.All(n => n is ErrorTreeNode);
 			}
 
 			public bool IsEnabled(TextViewContext context)
@@ -174,13 +167,13 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 			public void Execute(TextViewContext context)
 			{
-				StringBuilder builder = new StringBuilder();
+				var builder = new StringBuilder();
 				if (context.SelectedTreeNodes != null) {
 					foreach (var node in context.SelectedTreeNodes.OfType<ErrorTreeNode>()) {
 						builder.AppendLine(node.Text.ToString());
 					}
 				}
-				App.Current.Clipboard.SetTextAsync(builder.ToString());
+				Application.Current?.Clipboard?.SetTextAsync(builder.ToString());
 			}
 		}
 	}

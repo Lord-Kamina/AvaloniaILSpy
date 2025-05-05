@@ -52,8 +52,8 @@ namespace ICSharpCode.ILSpy
 		public override void Fail(string message, string detailMessage)
 		{
 			base.Fail(message, detailMessage); // let base class write the assert to the debug console
-			string topFrame = "";
-			string stackTrace = "";
+			var topFrame = "";
+			var stackTrace = "";
 			try {
 				stackTrace = new StackTrace(true).ToString();
 				var frames = stackTrace.Split('\r', '\n')
@@ -62,7 +62,12 @@ namespace ICSharpCode.ILSpy
 					.ToList();
 				topFrame = frames[0];
 				stackTrace = string.Join(Environment.NewLine, frames);
-			} catch { }
+			}
+			catch
+			{
+				// ignored
+			}
+
 			lock (ignoredStacks) {
 				if (ignoredStacks.Contains(topFrame))
 					return;
@@ -74,19 +79,27 @@ namespace ICSharpCode.ILSpy
 			// we're on the UI thread but dispatcher processing is disabled.
 			// In any case, we don't want to pump messages while the dialog is displaying,
 			// so we create a separate UI thread for the dialog:
-			int result = 0;
+			var result = 0;
 			var thread = new Thread(() => result = ShowAssertionDialog(message, detailMessage, stackTrace));
 			thread.SetApartmentState(ApartmentState.STA);
 			thread.Start();
 			thread.Join();
-			if (result == 0) { // throw
-				throw new AssertionFailedException(message);
-			} else if (result == 1) { // debug
-				Debugger.Break();
-			} else if (result == 2) { // ignore
-			} else if (result == 3) {
-				lock (ignoredStacks) {
-					ignoredStacks.Add(topFrame);
+			switch (result)
+			{
+				case 0: // throw
+					throw new AssertionFailedException(message);
+				case 1: // debug
+					Debugger.Break();
+					break;
+				case 2: // ignore
+					break;
+				case 3:
+				{
+					lock (ignoredStacks) {
+						ignoredStacks.Add(topFrame);
+					}
+
+					break;
 				}
 			}
 		}
@@ -95,9 +108,11 @@ namespace ICSharpCode.ILSpy
 		{
 			message = message + Environment.NewLine + detailMessage + Environment.NewLine + stackTrace;
 			string[] buttonTexts = { "Throw", "Debug", "Ignore", "Ignore All" };
-			CustomDialog inputBox = new CustomDialog("Assertion Failed", message.TakeStartEllipsis(750), -1, 2, buttonTexts);
-			//inputBox.StartPosition = Avalonia.Forms.FormStartPosition.CenterScreen;
-			inputBox.ShowInTaskbar = true; // make this window more visible, because it effectively interrupts the decompilation process.
+			var inputBox = new CustomDialog("Assertion Failed", message.TakeStartEllipsis(750), -1, 2, buttonTexts)
+				{
+					//inputBox.StartPosition = Avalonia.Forms.FormStartPosition.CenterScreen;
+					ShowInTaskbar = true // make this window more visible, because it effectively interrupts the decompilation process.
+				};
 			try {
 				inputBox.ShowDialog(MainWindow.Instance);
 				return inputBox.Result;

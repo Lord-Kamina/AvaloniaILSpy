@@ -37,14 +37,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
                 return Array.Empty<ISymbol>();
             var scope = context.GetScopeOf(attributeType);
             // TODO: DeclSecurity attributes are not supported.
-            if (!IsBuiltinAttribute(attributeType, out var knownAttribute))
-            {
-                return HandleCustomAttribute(attributeType, scope);
-            }
-            else
-            {
-                return HandleBuiltinAttribute(knownAttribute, scope).SelectMany(s => s);
-            }
+            return !IsBuiltinAttribute(attributeType, out var knownAttribute) ? HandleCustomAttribute(attributeType, scope) : HandleBuiltinAttribute(knownAttribute, scope).SelectMany(s => s);
         }
 
         bool IsBuiltinAttribute(ITypeDefinition attributeType, out KnownAttribute knownAttribute)

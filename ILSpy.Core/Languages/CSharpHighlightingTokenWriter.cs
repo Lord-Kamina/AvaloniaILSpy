@@ -111,10 +111,7 @@ namespace ICSharpCode.ILSpy
 			switch (keyword) {
 				case "namespace":
 				case "using":
-					if (role == UsingStatement.UsingKeywordRole)
-						color = structureKeywordsColor;
-					else
-						color = namespaceKeywordsColor;
+					color = role == UsingStatement.UsingKeywordRole ? structureKeywordsColor : namespaceKeywordsColor;
 					break;
 				case "this":
 				case "base":
@@ -315,52 +312,32 @@ namespace ICSharpCode.ILSpy
 				color = valueKeywordColor;
 			if ((identifier.Name == "dynamic" || identifier.Name == "var") && identifier.Parent is AstType)
 				color = queryKeywordsColor;
-			switch (GetCurrentDefinition()) {
-				case ITypeDefinition t:
-					switch (t.Kind) {
-						case TypeKind.Delegate:
-							color = delegateTypeColor;
-							break;
-						case TypeKind.Class:
-							color = referenceTypeColor;
-							break;
-						case TypeKind.Interface:
-							color = interfaceTypeColor;
-							break;
-						case TypeKind.Enum:
-							color = enumerationTypeColor;
-							break;
-						case TypeKind.Struct:
-							color = valueTypeColor;
-							break;
-					}
-					break;
-				case IMethod m:
-					color = methodDeclarationColor;
-					break;
-				case IField f:
-					color = fieldDeclarationColor;
-					break;
-			}
+			color = GetCurrentDefinition() switch
+			{
+				ITypeDefinition t => t.Kind switch
+				{
+					TypeKind.Delegate => delegateTypeColor,
+					TypeKind.Class => referenceTypeColor,
+					TypeKind.Interface => interfaceTypeColor,
+					TypeKind.Enum => enumerationTypeColor,
+					TypeKind.Struct => valueTypeColor,
+					_ => color
+				},
+				IMethod m => methodDeclarationColor,
+				IField f => fieldDeclarationColor,
+				_ => color
+			};
 			switch (GetCurrentMemberReference()) {
 				case IType t:
-					switch (t.Kind) {
-						case TypeKind.Delegate:
-							color = delegateTypeColor;
-							break;
-						case TypeKind.Class:
-							color = referenceTypeColor;
-							break;
-						case TypeKind.Interface:
-							color = interfaceTypeColor;
-							break;
-						case TypeKind.Enum:
-							color = enumerationTypeColor;
-							break;
-						case TypeKind.Struct:
-							color = valueTypeColor;
-							break;
-					}
+					color = t.Kind switch
+					{
+						TypeKind.Delegate => delegateTypeColor,
+						TypeKind.Class => referenceTypeColor,
+						TypeKind.Interface => interfaceTypeColor,
+						TypeKind.Enum => enumerationTypeColor,
+						TypeKind.Struct => valueTypeColor,
+						_ => color
+					};
 					break;
 				case IMethod m:
 					color = methodCallColor;
@@ -404,10 +381,7 @@ namespace ICSharpCode.ILSpy
 			var node = nodeStack.Peek();
 			if (node is Identifier)
 				node = node.Parent;
-            if (Decompiler.TextTokenWriter.IsDefinition(ref node))
-                return node.GetSymbol();
-
-			return null;
+            return Decompiler.TextTokenWriter.IsDefinition(ref node) ? node.GetSymbol() : null;
 		}
 
 		ISymbol GetCurrentMemberReference()

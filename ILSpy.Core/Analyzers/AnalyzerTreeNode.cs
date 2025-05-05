@@ -28,13 +28,13 @@ namespace ICSharpCode.ILSpy.Analyzers
 		private Language language;
 
 		public Language Language {
-			get { return language; }
-			set {
-				if (language != value) {
-					language = value;
-					foreach (var child in this.Children.OfType<AnalyzerTreeNode>())
-						child.Language = value;
-				}
+			get => language;
+			set
+			{
+				if (language == value) return;
+				language = value;
+				foreach (var child in this.Children.OfType<AnalyzerTreeNode>())
+					child.Language = value;
 			}
 		}
 
@@ -56,7 +56,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 		protected override void OnChildrenChanged(NotifyCollectionChangedEventArgs e)
 		{
 			if (e.NewItems != null) {
-				foreach (AnalyzerTreeNode a in e.NewItems.OfType<AnalyzerTreeNode>())
+				foreach (var a in e.NewItems.OfType<AnalyzerTreeNode>())
 					a.Language = this.Language;
 			}
 			base.OnChildrenChanged(e);

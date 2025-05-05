@@ -21,7 +21,7 @@ using System.Windows.Input;
 
 namespace ICSharpCode.ILSpy
 {
-	class CommandWrapper : ICommand
+	internal class CommandWrapper : ICommand
 	{
 		private readonly ICommand wrappedCommand;
 
@@ -32,17 +32,14 @@ namespace ICSharpCode.ILSpy
 
 		public static ICommand Unwrap(ICommand command)
 		{
-			CommandWrapper w = command as CommandWrapper;
-			if (w != null)
-				return w.wrappedCommand;
-			else
-				return command;
+			var w = command as CommandWrapper;
+			return w != null ? w.wrappedCommand : command;
 		}
 
 		public event EventHandler CanExecuteChanged
 		{
-			add { wrappedCommand.CanExecuteChanged += value; }
-			remove { wrappedCommand.CanExecuteChanged -= value; }
+			add => wrappedCommand.CanExecuteChanged += value;
+			remove => wrappedCommand.CanExecuteChanged -= value;
 		}
 
 		public void Execute(object parameter)

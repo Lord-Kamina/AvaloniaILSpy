@@ -32,32 +32,20 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	public class ResourceEntryNode : ILSpyTreeNode
 	{
 		private readonly string key;
-		private readonly Stream data;
 
-		public override object Text
-		{
-			get { return this.key; }
-		}
+		public override object Text => this.key;
 
-		public override object Icon
-		{
-			get { return Images.Resource; }
-		}
+		public override object Icon => Images.Resource;
 
-		protected Stream Data
-		{
-			get { return data; }
-		}
+		protected Stream Data { get; }
 
 
 		public ResourceEntryNode(string key, Stream data)
 		{
-			if (key == null)
-				throw new ArgumentNullException(nameof(key));
-			if (data == null)
-				throw new ArgumentNullException(nameof(data));
-			this.key = key;
-			this.data = data;
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(data);
+            this.key = key;
+			this.Data = data;
 		}
 
 		public static ILSpyTreeNode Create(string key, object data)
@@ -68,30 +56,30 @@ namespace ICSharpCode.ILSpy.TreeNodes
 				if (result != null)
 					return result;
 			}
-			var streamData = data as Stream;
-			if(streamData !=null)
-				result =  new ResourceEntryNode(key, data as Stream);
+
+			if(data is Stream streamData)
+				result =  new ResourceEntryNode(key, streamData);
 
 			return result;
 		}
 
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
 		{
-			language.WriteCommentLine(output, string.Format("{0} = {1}", key, data));
+			language.WriteCommentLine(output, $"{key} = {Data}");
 		}
 
 		public override async Task<bool> Save(DecompilerTextView textView)
 		{
-			SaveFileDialog dlg = new SaveFileDialog();
-			dlg.Title = "Save file";
-			dlg.InitialFileName = Path.GetFileName(DecompilerTextView.CleanUpName(key));
+			var dlg = new SaveFileDialog
+			{
+				Title = "Save file",
+				InitialFileName = Path.GetFileName(DecompilerTextView.CleanUpName(key))
+			};
 			var filename = await dlg.ShowAsync(App.Current.GetMainWindow());
-			if (!string.IsNullOrEmpty(filename)) {
-				data.Position = 0;
-				using (var fs = File.OpenWrite(filename)) {
-					data.CopyTo(fs);
-				}
-			}
+			if (string.IsNullOrEmpty(filename)) return true;
+			Data.Position = 0;
+			await using var fs = File.OpenWrite(filename);
+			await Data.CopyToAsync(fs);
 			return true;
 		}
 	}

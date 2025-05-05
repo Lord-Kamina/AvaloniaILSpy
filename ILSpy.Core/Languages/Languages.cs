@@ -35,14 +35,11 @@ namespace ICSharpCode.ILSpy
 		/// <summary>
 		/// A list of all languages.
 		/// </summary>
-		public static ReadOnlyCollection<Language> AllLanguages
-		{
-			get { return allLanguages; }
-		}
+		public static ReadOnlyCollection<Language> AllLanguages => allLanguages;
 
 		internal static void Initialize(ExportProvider ep)
 		{
-			List<Language> languages = new List<Language>();
+			var languages = new List<Language>();
 			languages.AddRange(ep.GetExportedValues<Language>());
 			languages.Sort((a, b) => a.Name.CompareTo(b.Name));
 			#if DEBUG

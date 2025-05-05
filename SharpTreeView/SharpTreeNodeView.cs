@@ -22,8 +22,8 @@ namespace ICSharpCode.TreeView
 
 		public IBrush TextBackground
 		{
-			get { return GetValue(TextBackgroundProperty); }
-			set { SetValue(TextBackgroundProperty, value); }
+			get => GetValue(TextBackgroundProperty);
+			set => SetValue(TextBackgroundProperty, value);
 		}
 
 		public static readonly DirectProperty<SharpTreeNodeView, object> IconProperty =
@@ -35,16 +35,10 @@ namespace ICSharpCode.TreeView
 				return expanded.Value ? owner.Node?.ExpandedIcon : owner.Node?.Icon;
 		});
 
-		public object Icon
-		{
-			get { return GetValue(IconProperty); }
-		}
+		public object Icon => GetValue(IconProperty);
 
 
-		public SharpTreeNode Node
-		{
-			get { return DataContext as SharpTreeNode; }
-		}
+		public SharpTreeNode Node => DataContext as SharpTreeNode;
 
 		public SharpTreeViewItem ParentItem { get; private set; }
 		
@@ -52,14 +46,11 @@ namespace ICSharpCode.TreeView
 			AvaloniaProperty.Register<SharpTreeNodeView, Control>("CellEditor");
 		
 		public Control CellEditor {
-			get { return (Control)GetValue(CellEditorProperty); }
-			set { SetValue(CellEditorProperty, value); }
+			get => GetValue(CellEditorProperty);
+			set => SetValue(CellEditorProperty, value);
 		}
 
-		public SharpTreeView ParentTreeView
-		{
-			get { return ParentItem.ParentTreeView; }
-		}
+		public SharpTreeView ParentTreeView => ParentItem.ParentTreeView;
 
 		internal LinesRenderer LinesRenderer;
 		internal Control spacer;
@@ -114,41 +105,49 @@ namespace ICSharpCode.TreeView
 				bindings.ForEach((obj) => obj.Dispose());
 				bindings.Clear();
 			}
-			if (newNode != null) {
-				newNode.PropertyChanged += Node_PropertyChanged;
-				if (Template != null) {
-					UpdateTemplate();
-				}
+
+			if (newNode == null) return;
+			newNode.PropertyChanged += Node_PropertyChanged;
+			if (Template != null) {
+				UpdateTemplate();
 			}
 		}
 
 		void Node_PropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
-			if (e.PropertyName == "IsEditing") {
-				OnIsEditingChanged();
-			} else if (e.PropertyName == "IsLast") {
-				if (ParentTreeView.ShowLines) {
-					foreach (var child in Node.VisibleDescendantsAndSelf()) {
-						var container = ParentTreeView.ContainerFromItem(child) as SharpTreeViewItem;
-						if (container != null && container.NodeView != null) {
-							container.NodeView.LinesRenderer.InvalidateVisual();
+			switch (e.PropertyName)
+			{
+				case "IsEditing":
+					OnIsEditingChanged();
+					break;
+				case "IsLast":
+				{
+					if (ParentTreeView.ShowLines) {
+						foreach (var child in Node.VisibleDescendantsAndSelf()) {
+							var container = ParentTreeView.ContainerFromItem(child) as SharpTreeViewItem;
+							if (container != null && container.NodeView != null) {
+								container.NodeView.LinesRenderer.InvalidateVisual();
+							}
 						}
 					}
+
+					break;
 				}
-			} else if (e.PropertyName == "IsExpanded") {
-				RaisePropertyChanged(IconProperty, null, Icon);
-				if (Node.IsExpanded)
-					ParentTreeView.HandleExpanding(Node);
+				case "IsExpanded":
+				{
+					RaisePropertyChanged(IconProperty, null, Icon);
+					if (Node.IsExpanded)
+						ParentTreeView.HandleExpanding(Node);
+					break;
+				}
 			}
 		}
 
 		void OnIsEditingChanged()
 		{
-			if (Node.IsEditing) {
-				if (CellEditor == null)
-					textEditorContainer.Child = new EditTextBox() { Item = ParentItem };
-				else
-					textEditorContainer.Child = CellEditor;
+			if (Node.IsEditing)
+			{
+				textEditorContainer.Child = CellEditor ?? new EditTextBox() { Item = ParentItem };
 			}
 			else {
 				textEditorContainer.Child = null;
@@ -163,7 +162,7 @@ namespace ICSharpCode.TreeView
 				bindings.Add(expander.Bind(ToggleButton.IsCheckedProperty, new Binding("IsExpanded") { Source = Node }));
 				bindings.Add(icon.Bind(ContentPresenter.IsVisibleProperty, new Binding("ShowIcon") { Source = Node }));
 				bindings.Add(checkBoxContainer.Bind(Border.IsVisibleProperty, new Binding("IsCheckable") { Source = Node }));
-				bindings.Add(checkBox.Bind(CheckBox.IsCheckedProperty, new Binding("IsChecked") { Source = Node }));
+				bindings.Add(checkBox.Bind(ToggleButton.IsCheckedProperty, new Binding("IsChecked") { Source = Node }));
 				bindings.Add(textContainer.Bind(Border.IsVisibleProperty, new Binding("IsEditing") { Source = Node, Converter = BoolConverters.Inverse }));
 				bindings.Add(textContent.Bind(ContentPresenter.ContentProperty, new Binding("Text") { Source = Node }));
 				RaisePropertyChanged(IconProperty, null, Icon);
@@ -192,11 +191,10 @@ namespace ICSharpCode.TreeView
 			else {
 				result -= 19;
 			}
-			if (result < 0) {
-				Debug.WriteLine("SharpTreeNodeView.CalculateIndent() on node without correctly-set level");
-				return 0;
-			}
-			return result;
+
+			if (result >= 0) return result;
+			Debug.WriteLine("SharpTreeNodeView.CalculateIndent() on node without correctly-set level");
+			return 0;
 		}
 	}
 }

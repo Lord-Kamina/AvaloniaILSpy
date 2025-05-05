@@ -59,8 +59,8 @@ namespace ICSharpCode.ILSpy
 #if DEBUG
         internal static IEnumerable<CSharpLanguage> GetDebugLanguages()
         {
-            string lastTransformName = "no transforms";
-            int transformCount = 0;
+            var lastTransformName = "no transforms";
+            var transformCount = 0;
             foreach (var transform in CSharpDecompiler.GetAstTransforms())
             {
                 yield return new CSharpLanguage
@@ -80,55 +80,40 @@ namespace ICSharpCode.ILSpy
         }
 #endif
 
-        public override string Name
-        {
-            get { return name; }
-        }
+        public override string Name => name;
 
-        public override string FileExtension
-        {
-            get { return ".cs"; }
-        }
+        public override string FileExtension => ".cs";
 
-        public override string ProjectFileExtension
-        {
-            get { return ".csproj"; }
-        }
+        public override string ProjectFileExtension => ".csproj";
 
         IReadOnlyList<LanguageVersion> versions;
 
-        public override IReadOnlyList<LanguageVersion> LanguageVersions
-        {
-            get
+        public override IReadOnlyList<LanguageVersion> LanguageVersions =>
+            versions ?? (versions = new List<LanguageVersion>()
             {
-                if (versions == null)
-                {
-                    versions = new List<LanguageVersion>() {
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp1.ToString(), "C# 1.0 / VS .NET"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp2.ToString(), "C# 2.0 / VS 2005"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp3.ToString(), "C# 3.0 / VS 2008"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp4.ToString(), "C# 4.0 / VS 2010"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp5.ToString(), "C# 5.0 / VS 2012"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp6.ToString(), "C# 6.0 / VS 2015"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7.ToString(), "C# 7.0 / VS 2017"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_1.ToString(), "C# 7.1 / VS 2017.3"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_2.ToString(), "C# 7.2 / VS 2017.4"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_3.ToString(), "C# 7.3 / VS 2017.7"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp8_0.ToString(), "C# 8.0 / VS 2019"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp9_0.ToString(), "C# 9.0 / VS 2019.8"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp10_0.ToString(), "C# 10.0 / VS 2022"),
-                        new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp11_0.ToString(), "C# 11.0 / VS 2022.4"),
-                    };
-                }
-                return versions;
-            }
-        }
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp1.ToString(), "C# 1.0 / VS .NET"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp2.ToString(), "C# 2.0 / VS 2005"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp3.ToString(), "C# 3.0 / VS 2008"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp4.ToString(), "C# 4.0 / VS 2010"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp5.ToString(), "C# 5.0 / VS 2012"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp6.ToString(), "C# 6.0 / VS 2015"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7.ToString(), "C# 7.0 / VS 2017"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_1.ToString(), "C# 7.1 / VS 2017.3"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_2.ToString(), "C# 7.2 / VS 2017.4"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_3.ToString(), "C# 7.3 / VS 2017.7"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp8_0.ToString(), "C# 8.0 / VS 2019"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp9_0.ToString(), "C# 9.0 / VS 2019.8"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp10_0.ToString(), "C# 10.0 / VS 2022"),
+                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp11_0.ToString(), "C# 11.0 / VS 2022.4"),
+            });
 
         CSharpDecompiler CreateDecompiler(PEFile module, DecompilationOptions options)
         {
-            CSharpDecompiler decompiler = new CSharpDecompiler(module, module.GetAssemblyResolver(), options.DecompilerSettings);
-            decompiler.CancellationToken = options.CancellationToken;
-            decompiler.DebugInfoProvider = module.GetDebugInfoOrNull();
+            var decompiler = new CSharpDecompiler(module, module.GetAssemblyResolver(), options.DecompilerSettings)
+                {
+                    CancellationToken = options.CancellationToken,
+                    DebugInfoProvider = module.GetDebugInfoOrNull()
+                };
             while (decompiler.AstTransforms.Count > transformCount)
                 decompiler.AstTransforms.RemoveAt(decompiler.AstTransforms.Count - 1);
             return decompiler;
@@ -148,8 +133,8 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileMethod(IMethod method, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = (PEFile)method.ParentModule.MetadataFile;
-            CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
+            var assembly = (PEFile)method.ParentModule?.MetadataFile;
+            var decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
             WriteCommentLine(output, TypeToString(method.DeclaringType, includeNamespace: true));
@@ -184,7 +169,7 @@ namespace ICSharpCode.ILSpy
                     switch (node)
                     {
                         case ConstructorDeclaration ctor:
-                            if (ctor.GetSymbol() == this.ctor)
+                            if (Equals(ctor.GetSymbol(), this.ctor))
                             {
                                 ctorDecl = ctor;
                             }
@@ -229,8 +214,8 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileProperty(IProperty property, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = (PEFile)property.ParentModule.MetadataFile;
-            CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
+            var assembly = (PEFile)property.ParentModule?.MetadataFile;
+            var decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
             WriteCommentLine(output, TypeToString(property.DeclaringType, includeNamespace: true));
@@ -239,8 +224,8 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileField(IField field, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = (PEFile)field.ParentModule.MetadataFile;
-            CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
+            var assembly = (PEFile)field.ParentModule?.MetadataFile;
+            var decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
             WriteCommentLine(output, TypeToString(field.DeclaringType, includeNamespace: true));
@@ -259,17 +244,8 @@ namespace ICSharpCode.ILSpy
 
         static List<EntityHandle> CollectFieldsAndCtors(ITypeDefinition type, bool isStatic)
         {
-            var members = new List<EntityHandle>();
-            foreach (var field in type.Fields)
-            {
-                if (!field.MetadataToken.IsNil && field.IsStatic == isStatic)
-                    members.Add(field.MetadataToken);
-            }
-            foreach (var ctor in type.Methods)
-            {
-                if (!ctor.MetadataToken.IsNil && ctor.IsConstructor && ctor.IsStatic == isStatic)
-                    members.Add(ctor.MetadataToken);
-            }
+            var members = (from field in type.Fields where !field.MetadataToken.IsNil && field.IsStatic == isStatic select field.MetadataToken).ToList();
+            members.AddRange(from ctor in type.Methods where !ctor.MetadataToken.IsNil && ctor.IsConstructor && ctor.IsStatic == isStatic select ctor.MetadataToken);
 
             return members;
         }
@@ -293,11 +269,11 @@ namespace ICSharpCode.ILSpy
                     switch (node)
                     {
                         case EntityDeclaration ed:
-                            if (node.GetSymbol() != field)
+                            if (!Equals(node.GetSymbol(), field))
                                 node.Remove();
                             break;
                         case Comment c:
-                            if (c.GetSymbol() != field)
+                            if (!Equals(c.GetSymbol(), field))
                                 node.Remove();
                             break;
                     }
@@ -307,8 +283,8 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileEvent(IEvent @event, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = (PEFile)@event.ParentModule.MetadataFile;
-            CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
+            using var assembly = (PEFile)@event.ParentModule?.MetadataFile;
+            var decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
             WriteCommentLine(output, TypeToString(@event.DeclaringType, includeNamespace: true));
@@ -317,8 +293,8 @@ namespace ICSharpCode.ILSpy
 
         public override void DecompileType(ITypeDefinition type, ITextOutput output, DecompilationOptions options)
         {
-            PEFile assembly = (PEFile)type.ParentModule.MetadataFile;
-            CSharpDecompiler decompiler = CreateDecompiler(assembly, options);
+            var assembly = (PEFile)type.ParentModule?.MetadataFile;
+            var decompiler = CreateDecompiler(assembly, options);
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
             WriteCommentLine(output, TypeToString(type, includeNamespace: true));
@@ -330,11 +306,12 @@ namespace ICSharpCode.ILSpy
             var loadedAssembly = MainWindow.Instance.CurrentAssemblyList.GetAssemblies().FirstOrDefault(la => la.GetPEFileOrNull() == module);
             if (loadedAssembly == null || !loadedAssembly.LoadedAssemblyReferencesInfo.HasErrors)
                 return;
-            string line1 = Properties.Resources.WarningSomeAssemblyReference;
-            string line2 = Properties.Resources.PropertyManuallyMissingReferencesListLoadedAssemblies;
+            var line1 = Properties.Resources.WarningSomeAssemblyReference;
+            var line2 = Properties.Resources.PropertyManuallyMissingReferencesListLoadedAssemblies;
+
             AddWarningMessage(module, output, line1, line2, Properties.Resources.ShowAssemblyLoad, Images.ViewCode, delegate
             {
-                ILSpyTreeNode assemblyNode = MainWindow.Instance.FindTreeNode(module);
+                var assemblyNode = MainWindow.Instance.FindTreeNode(module);
                 assemblyNode.EnsureLazyChildren();
                 MainWindow.Instance.SelectNode(assemblyNode.Children.OfType<ReferenceFolderTreeNode>().Single());
             });
@@ -345,16 +322,16 @@ namespace ICSharpCode.ILSpy
             var metadata = module.Metadata;
             if (!metadata.GetCustomAttributes(Handle.AssemblyDefinition).HasKnownAttribute(metadata, KnownAttribute.ReferenceAssembly))
                 return;
-            string line1 = Properties.Resources.WarningAsmMarkedRef;
+            var line1 = Properties.Resources.WarningAsmMarkedRef;
             AddWarningMessage(module, output, line1);
         }
 
         void AddWarningMessage(PEFile module, ITextOutput output, string line1, string line2 = null,
             string buttonText = null, IBitmap buttonImage = null, EventHandler<Avalonia.Interactivity.RoutedEventArgs> buttonClickHandler = null)
         {
+            var text = line1;
             if (output is ISmartTextOutput fancyOutput)
             {
-                string text = line1;
                 if (!string.IsNullOrEmpty(line2))
                     text += Environment.NewLine + line2;
                 fancyOutput.AddUIElement(() => new StackPanel
@@ -374,11 +351,9 @@ namespace ICSharpCode.ILSpy
                     }
                 });
                 fancyOutput.WriteLine();
-                if (buttonText != null && buttonClickHandler != null)
-                {
-                    fancyOutput.AddButton(buttonImage, buttonText, buttonClickHandler);
-                    fancyOutput.WriteLine();
-                }
+                if (buttonText == null || buttonClickHandler == null) return;
+                fancyOutput.AddButton(buttonImage, buttonText, buttonClickHandler);
+                fancyOutput.WriteLine();
             }
             else
             {
@@ -396,88 +371,81 @@ namespace ICSharpCode.ILSpy
                 var decompiler = new ILSpyWholeProjectDecompiler(assembly, options);
                 return decompiler.DecompileProject(module, options.SaveAsProjectDirectory, new TextOutputWriter(output), options.CancellationToken);
             }
-            else
-            {
-                AddReferenceAssemblyWarningMessage(module, output);
-                AddReferenceWarningMessage(module, output);
-                output.WriteLine();
-                base.DecompileAssembly(assembly, output, options);
 
-                // don't automatically load additional assemblies when an assembly node is selected in the tree view
-                using (options.FullDecompilation ? null : LoadedAssembly.DisableAssemblyLoad())
+            AddReferenceAssemblyWarningMessage(module, output);
+            AddReferenceWarningMessage(module, output);
+            output.WriteLine();
+            base.DecompileAssembly(assembly, output, options);
+
+            // don't automatically load additional assemblies when an assembly node is selected in the tree view
+            var assemblyResolver = assembly.GetAssemblyResolver();
+            var runtimeName = GetRuntimeDisplayName(module);
+            using (options.FullDecompilation ? null : LoadedAssembly.DisableAssemblyLoad())
+            {
+                var typeSystem = new DecompilerTypeSystem(module, assemblyResolver, options.DecompilerSettings);
+                var globalType = typeSystem.MainModule.TypeDefinitions.FirstOrDefault();
+                if (globalType != null)
                 {
-                    IAssemblyResolver assemblyResolver = assembly.GetAssemblyResolver();
-                    var typeSystem = new DecompilerTypeSystem(module, assemblyResolver, options.DecompilerSettings);
-                    var globalType = typeSystem.MainModule.TypeDefinitions.FirstOrDefault();
-                    if (globalType != null)
+                    output.Write("// Global type: ");
+                    output.WriteReference(globalType, globalType.FullName);
+                    output.WriteLine();
+                }
+                var metadata = module.Metadata;
+                var corHeader = module.Reader.PEHeaders.CorHeader;
+                var entrypointHandle = MetadataTokenHelpers.EntityHandleOrNil(corHeader.EntryPointTokenOrRelativeVirtualAddress);
+                if (entrypointHandle is { IsNil: false, Kind: HandleKind.MethodDefinition })
+                {
+                    var entrypoint = typeSystem.MainModule.ResolveMethod(entrypointHandle, new Decompiler.TypeSystem.GenericContext());
+                    if (entrypoint != null)
                     {
-                        output.Write("// Global type: ");
-                        output.WriteReference(globalType, globalType.FullName);
+                        output.Write("// Entry point: ");
+                        output.WriteReference(entrypoint, entrypoint.DeclaringType.FullName + "." + entrypoint.Name);
                         output.WriteLine();
                     }
-                    var metadata = module.Metadata;
-                    var corHeader = module.Reader.PEHeaders.CorHeader;
-                    var entrypointHandle = MetadataTokenHelpers.EntityHandleOrNil(corHeader.EntryPointTokenOrRelativeVirtualAddress);
-                    if (!entrypointHandle.IsNil && entrypointHandle.Kind == HandleKind.MethodDefinition)
-                    {
-                        var entrypoint = typeSystem.MainModule.ResolveMethod(entrypointHandle, new Decompiler.TypeSystem.GenericContext());
-                        if (entrypoint != null)
-                        {
-                            output.Write("// Entry point: ");
-                            output.WriteReference(entrypoint, entrypoint.DeclaringType.FullName + "." + entrypoint.Name);
-                            output.WriteLine();
-                        }
-                    }
-                    output.WriteLine("// Architecture: " + GetPlatformDisplayName(module));
-                    if ((corHeader.Flags & System.Reflection.PortableExecutable.CorFlags.ILOnly) == 0)
-                    {
-                        output.WriteLine("// This assembly contains unmanaged code.");
-                    }
-                    string runtimeName = GetRuntimeDisplayName(module);
-                    if (runtimeName != null)
-                    {
-                        output.WriteLine("// Runtime: " + runtimeName);
-                    }
-                    if ((corHeader.Flags & System.Reflection.PortableExecutable.CorFlags.StrongNameSigned) != 0)
-                    {
-                        output.WriteLine("// This assembly is signed with a strong name key.");
-                    }
-                    if (metadata.IsAssembly)
-                    {
-                        var asm = metadata.GetAssemblyDefinition();
-                        if (asm.HashAlgorithm != AssemblyHashAlgorithm.None)
-                            output.WriteLine("// Hash algorithm: " + asm.HashAlgorithm.ToString().ToUpper());
-                        if (!asm.PublicKey.IsNil)
-                        {
-                            output.Write("// Public key: ");
-                            var reader = metadata.GetBlobReader(asm.PublicKey);
-                            while (reader.RemainingBytes > 0)
-                                output.Write(reader.ReadByte().ToString("x2"));
-                            output.WriteLine();
-                        }
-                    }
-                    var debugInfo = assembly.GetDebugInfoOrNull();
-                    if (debugInfo != null)
-                    {
-                        output.WriteLine("// Debug info: " + debugInfo.Description);
-                    }
-                    output.WriteLine();
-
-                    CSharpDecompiler decompiler = new CSharpDecompiler(typeSystem, options.DecompilerSettings);
-                    decompiler.CancellationToken = options.CancellationToken;
-                    SyntaxTree st;
-                    if (options.FullDecompilation)
-                    {
-                        st = decompiler.DecompileWholeModuleAsSingleFile();
-                    }
-                    else
-                    {
-                        st = decompiler.DecompileModuleAndAssemblyAttributes();
-                    }
-                    WriteCode(output, options.DecompilerSettings, st, decompiler.TypeSystem);
                 }
-                return null;
+                output.WriteLine("// Architecture: " + GetPlatformDisplayName(module));
+                if ((corHeader.Flags & System.Reflection.PortableExecutable.CorFlags.ILOnly) == 0)
+                {
+                    output.WriteLine("// This assembly contains unmanaged code.");
+                }
+
+                if (runtimeName != null)
+                {
+                    output.WriteLine("// Runtime: " + runtimeName);
+                }
+                if ((corHeader.Flags & System.Reflection.PortableExecutable.CorFlags.StrongNameSigned) != 0)
+                {
+                    output.WriteLine("// This assembly is signed with a strong name key.");
+                }
+                if (metadata.IsAssembly)
+                {
+                    var asm = metadata.GetAssemblyDefinition();
+                    if (asm.HashAlgorithm != AssemblyHashAlgorithm.None)
+                        output.WriteLine("// Hash algorithm: " + asm.HashAlgorithm.ToString().ToUpper());
+                    if (!asm.PublicKey.IsNil)
+                    {
+                        output.Write("// Public key: ");
+                        var reader = metadata.GetBlobReader(asm.PublicKey);
+                        while (reader.RemainingBytes > 0)
+                            output.Write(reader.ReadByte().ToString("x2"));
+                        output.WriteLine();
+                    }
+                }
+                var debugInfo = assembly.GetDebugInfoOrNull();
+                if (debugInfo != null)
+                {
+                    output.WriteLine("// Debug info: " + debugInfo.Description);
+                }
+                output.WriteLine();
+
+                var decompiler = new CSharpDecompiler(typeSystem, options.DecompilerSettings)
+                    {
+                        CancellationToken = options.CancellationToken
+                    };
+                var st = options.FullDecompilation ? decompiler.DecompileWholeModuleAsSingleFile() : decompiler.DecompileModuleAndAssemblyAttributes();
+                WriteCode(output, options.DecompilerSettings, st, decompiler.TypeSystem);
             }
+            return null;
         }
 
         class ILSpyWholeProjectDecompiler : WholeProjectDecompiler
@@ -502,12 +470,10 @@ namespace ICSharpCode.ILSpy
             {
                 foreach (var handler in App.ExportProvider.GetExportedValues<IResourceFileHandler>())
                 {
-                    if (handler.CanHandle(fileName, options))
-                    {
-                        entryStream.Position = 0;
-                        fileName = handler.WriteResourceToFile(assembly, fileName, entryStream, options);
-                        return new[] { new ProjectItemInfo(handler.EntryType, fileName) };
-                    }
+                    if (!handler.CanHandle(fileName, options)) continue;
+                    entryStream.Position = 0;
+                    fileName = handler.WriteResourceToFile(assembly, fileName, entryStream, options);
+                    return new[] { new ProjectItemInfo(handler.EntryType, fileName) };
                 }
                 return base.WriteResourceToFile(fileName, resourceName, entryStream);
             }
@@ -537,8 +503,7 @@ namespace ICSharpCode.ILSpy
 
         public override string TypeToString(IType type, bool includeNamespace)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             var ambience = CreateAmbience();
             // Do not forget to update CSharpAmbienceTests.ILSpyMainTreeViewFlags, if this ever changes.
             if (includeNamespace)
@@ -551,48 +516,47 @@ namespace ICSharpCode.ILSpy
                 return ambience.ConvertSymbol(definition);
                 // HACK : UnknownType is not supported by CSharpAmbience.
             }
-            else if (type.Kind == TypeKind.Unknown)
+
+            if (type.Kind == TypeKind.Unknown)
             {
                 return (includeNamespace ? type.FullName : type.Name)
-                    + (type.TypeParameterCount > 0 ? "<" + string.Join(",", type.TypeArguments.Select(t => t.Name)) + ">" : "");
+                       + (type.TypeParameterCount > 0 ? "<" + string.Join(",", type.TypeArguments.Select(t => t.Name)) + ">" : "");
             }
-            else
-            {
-                return ambience.ConvertType(type);
-            }
+
+            return ambience.ConvertType(type);
         }
 
         public override string FieldToString(IField field, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
         {
-            if (field == null)
-                throw new ArgumentNullException(nameof(field));
-            return EntityToString(field, includeDeclaringTypeName, includeNamespace, includeNamespaceOfDeclaringTypeName);
+            return field == null
+                ? throw new ArgumentNullException(nameof(field))
+                : EntityToString(field, includeDeclaringTypeName, includeNamespace,
+                    includeNamespaceOfDeclaringTypeName);
         }
 
         public override string PropertyToString(IProperty property, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
         {
-            if (property == null)
-                throw new ArgumentNullException(nameof(property));
+            ArgumentNullException.ThrowIfNull(property);
             return EntityToString(property, includeDeclaringTypeName, includeNamespace, includeNamespaceOfDeclaringTypeName);
         }
 
         public override string MethodToString(IMethod method, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
         {
-            if (method == null)
-                throw new ArgumentNullException(nameof(method));
+            ArgumentNullException.ThrowIfNull(method);
             return EntityToString(method, includeDeclaringTypeName, includeNamespace, includeNamespaceOfDeclaringTypeName);
         }
 
         public override string EventToString(IEvent @event, bool includeDeclaringTypeName, bool includeNamespace, bool includeNamespaceOfDeclaringTypeName)
         {
-            if (@event == null)
-                throw new ArgumentNullException(nameof(@event));
-            return EntityToString(@event, includeDeclaringTypeName, includeNamespace, includeNamespaceOfDeclaringTypeName);
+            return @event == null
+                ? throw new ArgumentNullException(nameof(@event))
+                : EntityToString(@event, includeDeclaringTypeName, includeNamespace,
+                    includeNamespaceOfDeclaringTypeName);
         }
 
         string ToCSharpString(MetadataReader metadata, TypeDefinitionHandle handle, bool fullName, bool omitGenerics)
         {
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             var currentTypeDefHandle = handle;
             var typeDef = metadata.GetTypeDefinition(currentTypeDefHandle);
 
@@ -606,8 +570,8 @@ namespace ICSharpCode.ILSpy
                 if (!omitGenerics && genericParams.Count > 0)
                 {
                     builder.Insert(0, '>');
-                    int firstIndex = genericParams.Count - typeParamCount;
-                    for (int i = genericParams.Count - 1; i >= genericParams.Count - typeParamCount; i--)
+                    var firstIndex = genericParams.Count - typeParamCount;
+                    for (var i = genericParams.Count - 1; i >= genericParams.Count - typeParamCount; i--)
                     {
                         builder.Insert(0, metadata.GetString(metadata.GetGenericParameter(genericParams[i]).Name));
                         builder.Insert(0, i == firstIndex ? '<' : ',');
@@ -618,18 +582,16 @@ namespace ICSharpCode.ILSpy
                 if (!fullName) break;
             }
 
-            if (fullName && !typeDef.Namespace.IsNil)
-            {
-                builder.Insert(0, '.');
-                builder.Insert(0, metadata.GetString(typeDef.Namespace));
-            }
+            if (!fullName || typeDef.Namespace.IsNil) return builder.ToString();
+            builder.Insert(0, '.');
+            builder.Insert(0, metadata.GetString(typeDef.Namespace));
 
             return builder.ToString();
         }
 
         public override string GetEntityName(PEFile module, EntityHandle handle, bool fullName, bool omitGenerics)
         {
-            MetadataReader metadata = module.Metadata;
+            var metadata = module.Metadata;
             switch (handle.Kind)
             {
                 case HandleKind.TypeDefinition:
@@ -643,7 +605,7 @@ namespace ICSharpCode.ILSpy
                 case HandleKind.MethodDefinition:
                     var md = metadata.GetMethodDefinition((MethodDefinitionHandle)handle);
                     declaringType = md.GetDeclaringType();
-                    string methodName = metadata.GetString(md.Name);
+                    var methodName = metadata.GetString(md.Name);
                     switch (methodName)
                     {
                         case ".ctor":
@@ -666,7 +628,7 @@ namespace ICSharpCode.ILSpy
                             if (!omitGenerics && genericParams.Count > 0)
                             {
                                 methodName += "<";
-                                int i = 0;
+                                var i = 0;
                                 foreach (var h in genericParams)
                                 {
                                     if (i > 0)
@@ -700,7 +662,7 @@ namespace ICSharpCode.ILSpy
 
         public override bool ShowMember(IEntity member)
         {
-            PEFile assembly = (PEFile)member.ParentModule.MetadataFile;
+            var assembly = (PEFile)member.ParentModule?.MetadataFile;
             return showAllMembers || !CSharpDecompiler.MemberIsHidden(assembly, member.MetadataToken, new DecompilationOptions().DecompilerSettings);
         }
 

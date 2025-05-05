@@ -22,13 +22,15 @@ using ICSharpCode.ILSpy.Properties;
 namespace ICSharpCode.ILSpy
 {
     [ExportMainMenuCommand(Menu = nameof(Resources._File), Header = nameof(Resources.Open_List), MenuIcon = "Images/AssemblyList.png", MenuCategory = nameof(Resources.Open), MenuOrder = 1.7)]
-    sealed class OpenListCommand : SimpleCommand
+    internal sealed class OpenListCommand : SimpleCommand
 	{
 		public override async void Execute(object parameter)
 		{
-			OpenListDialog dlg = new OpenListDialog();
-			dlg.Title = "Open List";
-            if (await dlg.ShowDialog<bool>(MainWindow.Instance) == true)
+			var dlg = new OpenListDialog
+			{
+				Title = "Open List"
+			};
+			if (await dlg.ShowDialog<bool>(MainWindow.Instance))
 				MainWindow.Instance.ShowAssemblyList(dlg.SelectedListName);
 		}
 	}

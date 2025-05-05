@@ -41,10 +41,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 		public override bool ShowExpander => !type.IsSealed && base.ShowExpander;
 
-		public override object Text
-		{
-			get { return Language.TypeToString(type, includeNamespace: true) + type.MetadataToken.ToSuffixString(); }
-		}
+		public override object Text => Language.TypeToString(type, includeNamespace: true) + type.MetadataToken.ToSuffixString();
 
 		public override object Icon => TypeTreeNode.GetIcon(type);
 
@@ -52,25 +49,23 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
             if (settings.ShowApiLevel == ApiVisibility.PublicOnly && !IsPublicAPI)
                     return FilterResult.Hidden;
-			if (settings.SearchTermMatches(type.Name)) {
-                if (type.DeclaringType != null && (settings.ShowApiLevel != ApiVisibility.All || !settings.Language.ShowMember(type)))
-                        return FilterResult.Hidden;
-				else
-					return FilterResult.Match;
-			} else
-				return FilterResult.Recurse;
+            if (!settings.SearchTermMatches(type.Name)) return FilterResult.Recurse;
+            if (type.DeclaringType != null && (settings.ShowApiLevel != ApiVisibility.All || !settings.Language.ShowMember(type)))
+				return FilterResult.Hidden;
+			return FilterResult.Match;
+
 		}
 		
 		public override bool IsPublicAPI {
-			get {
-				switch (type.Accessibility) {
-					case Accessibility.Public:
-					case Accessibility.Internal:
-					case Accessibility.ProtectedOrInternal:
-						return true;
-					default:
-						return false;
-				}
+			get
+			{
+				return type.Accessibility switch
+				{
+					Accessibility.Public => true,
+					Accessibility.Internal => true,
+					Accessibility.ProtectedOrInternal => true,
+					_ => false
+				};
 			}
 		}
 

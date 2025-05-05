@@ -43,37 +43,30 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			Debug.Assert(analyzedSymbol is IMethod);
 			var scope = context.GetScopeOf((IEntity)analyzedSymbol);
 			foreach (var type in scope.GetTypesInScope(context.CancellationToken)) {
-				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule.MetadataFile , type.MetadataToken);
+				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule?.MetadataFile , type.MetadataToken);
 				var methods = type.GetMembers(m => m is IMethod, Options).OfType<IMethod>();
 				foreach (var method in methods) {
 					if (IsUsedInMethod((IMethod)analyzedSymbol, method, mappingInfo, context))
 						yield return method;
 				}
 
-				foreach (var property in type.Properties) {
-					if (property.CanGet && IsUsedInMethod((IMethod)analyzedSymbol, property.Getter, mappingInfo, context)) {
-						yield return property;
-						continue;
-					}
-					if (property.CanSet && IsUsedInMethod((IMethod)analyzedSymbol, property.Setter, mappingInfo, context)) {
-						yield return property;
-						continue;
-					}
+				foreach (var property in type.Properties)
+				{
+					if ((!property.CanGet ||
+					     !IsUsedInMethod((IMethod)analyzedSymbol, property.Getter, mappingInfo, context)) &&
+					    (!property.CanSet || !IsUsedInMethod((IMethod)analyzedSymbol, property.Setter, mappingInfo,
+						    context))) continue;
+					yield return property;
 				}
 
-				foreach (var @event in type.Events) {
-					if (@event.CanAdd && IsUsedInMethod((IMethod)analyzedSymbol, @event.AddAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
-					if (@event.CanRemove && IsUsedInMethod((IMethod)analyzedSymbol, @event.RemoveAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
-					if (@event.CanInvoke && IsUsedInMethod((IMethod)analyzedSymbol, @event.InvokeAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
+				foreach (var @event in type.Events)
+				{
+					if ((!@event.CanAdd ||
+					     !IsUsedInMethod((IMethod)analyzedSymbol, @event.AddAccessor, mappingInfo, context)) &&
+					    (!@event.CanRemove || !IsUsedInMethod((IMethod)analyzedSymbol, @event.RemoveAccessor,
+						    mappingInfo, context)) && (!@event.CanInvoke || !IsUsedInMethod((IMethod)analyzedSymbol,
+						    @event.InvokeAccessor, mappingInfo, context))) continue;
+					yield return @event;
 				}
 
 			}
@@ -92,30 +85,28 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			var blob = methodBody.GetILReader();
 			var genericContext = new Decompiler.TypeSystem.GenericContext();
 
-			while (blob.RemainingBytes > 0) {
+			while (blob.RemainingBytes > 0)
+			{
 				var opCode = blob.DecodeOpCode();
-				switch (opCode.GetOperandType()) {
-					case OperandType.Field:
-					case OperandType.Method:
-					case OperandType.Sig:
-					case OperandType.Tok:
-						var member = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
-						if (member.IsNil) continue;
+				if (opCode.GetOperandType() == OperandType.Field || opCode.GetOperandType() == OperandType.Method ||
+				    opCode.GetOperandType() == OperandType.Sig || opCode.GetOperandType() == OperandType.Tok)
+				{
+					var member = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
+					if (member.IsNil) continue;
 
-						switch (member.Kind) {
-							case HandleKind.MethodDefinition:
-							case HandleKind.MethodSpecification:
-							case HandleKind.MemberReference:
-								var m = (mainModule.ResolveEntity(member, genericContext) as IMember)?.MemberDefinition;
-								if (m.MetadataToken == analyzedMethod.MetadataToken && m.ParentModule.MetadataFile  == analyzedMethod.ParentModule.MetadataFile ) {
-									return true;
-								}
-								break;
-						}
-						break;
-					default:
-						ILParser.SkipOperand(ref blob, opCode);
-						break;
+					if (member.Kind != HandleKind.MethodDefinition &&
+					    member.Kind != HandleKind.MethodSpecification &&
+					    member.Kind != HandleKind.MemberReference) continue;
+					var m = (mainModule?.ResolveEntity(member, genericContext) as IMember)?.MemberDefinition;
+					if (m?.MetadataToken == analyzedMethod.MetadataToken && m.ParentModule?.MetadataFile ==
+					    analyzedMethod.ParentModule?.MetadataFile)
+					{
+						return true;
+					}
+				}
+				else
+				{
+					blob.SkipOperand(opCode);
 				}
 			}
 

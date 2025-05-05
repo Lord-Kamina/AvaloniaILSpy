@@ -60,15 +60,10 @@ namespace ICSharpCode.ILSpy.DebugInfo
 				return Empty<Decompiler.DebugInfo.SequencePoint>.Array;
 			var sequencePoints = new Decompiler.DebugInfo.SequencePoint[count];
 			var points = method.GetSequencePoints();
-			int i = 0;
+			var i = 0;
 			var buffer = new char[1024];
 			foreach (var point in points) {
-				string url;
-				if (point.Document.GetUrl(buffer.Length, out int length, buffer) == 0) {
-					url = new string(buffer, 0, length - 1);
-				} else {
-					url = "";
-				}
+				var url = point.Document.GetUrl(buffer.Length, out var length, buffer) == 0 ? new string(buffer, 0, length - 1) : "";
 				sequencePoints[i] = new Decompiler.DebugInfo.SequencePoint() {
 					Offset = point.Offset,
 					StartLine = point.StartLine,

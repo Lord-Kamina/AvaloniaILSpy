@@ -54,39 +54,41 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		/// <param name="y">Second sequence.</param>
 		public int Compare(string x, string y)
 		{
-			CompareInfo cmp = culture.CompareInfo;
-			int iA = 0;
-			int iB = 0;
-			int softResult = 0;
-			int softResultWeight = 0;
+			var cmp = culture.CompareInfo;
+			var iA = 0;
+			var iB = 0;
+			var softResult = 0;
+			var softResultWeight = 0;
 			while (iA < x.Length && iB < y.Length)
 			{
-				bool isDigitA = Char.IsDigit(x[iA]);
-				bool isDigitB = Char.IsDigit(y[iB]);
+				var isDigitA = char.IsDigit(x[iA]);
+				var isDigitB = char.IsDigit(y[iB]);
 				if (isDigitA != isDigitB)
 				{
 					return cmp.Compare(x, iA, y, iB, options);
 				}
-				else if (!isDigitA && !isDigitB)
+
+				if (!isDigitA && !isDigitB)
 				{
-					int jA = iA + 1;
-					int jB = iB + 1;
-					while (jA < x.Length && !Char.IsDigit(x[jA])) jA++;
-					while (jB < y.Length && !Char.IsDigit(y[jB])) jB++;
-					int cmpResult = cmp.Compare(x, iA, jA - iA, y, iB, jB - iB, options);
+					var jA = iA + 1;
+					var jB = iB + 1;
+					while (jA < x.Length && !char.IsDigit(x[jA])) jA++;
+					while (jB < y.Length && !char.IsDigit(y[jB])) jB++;
+					var cmpResult = cmp.Compare(x, iA, jA - iA, y, iB, jB - iB, options);
 					if (cmpResult != 0)
 					{
 						// Certain strings may be considered different due to "soft" differences that are
 						// ignored if more significant differences follow, e.g. a hyphen only affects the
 						// comparison if no other differences follow
-						string sectionA = x.Substring(iA, jA - iA);
-						string sectionB = y.Substring(iB, jB - iB);
+						var sectionA = x.Substring(iA, jA - iA);
+						var sectionB = y.Substring(iB, jB - iB);
 						if (cmp.Compare(sectionA + "1", sectionB + "2", options) ==
-							cmp.Compare(sectionA + "2", sectionB + "1", options))
+						    cmp.Compare(sectionA + "2", sectionB + "1", options))
 						{
 							return cmp.Compare(x, iA, y, iB, options);
 						}
-						else if (softResultWeight < 1)
+
+						if (softResultWeight < 1)
 						{
 							softResult = cmpResult;
 							softResultWeight = 1;
@@ -97,30 +99,28 @@ namespace ICSharpCode.ILSpy.TreeNodes
 				}
 				else
 				{
-					char zeroA = (char)(x[iA] - (int)Char.GetNumericValue(x[iA]));
-					char zeroB = (char)(y[iB] - (int)Char.GetNumericValue(y[iB]));
-					int jA = iA;
-					int jB = iB;
+					var zeroA = (char)(x[iA] - (int)char.GetNumericValue(x[iA]));
+					var zeroB = (char)(y[iB] - (int)char.GetNumericValue(y[iB]));
+					var jA = iA;
+					var jB = iB;
 					while (jA < x.Length && x[jA] == zeroA) jA++;
 					while (jB < y.Length && y[jB] == zeroB) jB++;
-					int resultIfSameLength = 0;
+					var resultIfSameLength = 0;
 					do
 					{
-						isDigitA = jA < x.Length && Char.IsDigit(x[jA]);
-						isDigitB = jB < y.Length && Char.IsDigit(y[jB]);
-						int numA = isDigitA ? (int)Char.GetNumericValue(x[jA]) : 0;
-						int numB = isDigitB ? (int)Char.GetNumericValue(y[jB]) : 0;
+						isDigitA = jA < x.Length && char.IsDigit(x[jA]);
+						isDigitB = jB < y.Length && char.IsDigit(y[jB]);
+						var numA = isDigitA ? (int)char.GetNumericValue(x[jA]) : 0;
+						var numB = isDigitB ? (int)char.GetNumericValue(y[jB]) : 0;
 						if (isDigitA && (char)(x[jA] - numA) != zeroA) isDigitA = false;
 						if (isDigitB && (char)(y[jB] - numB) != zeroB) isDigitB = false;
-						if (isDigitA && isDigitB)
+						if (!isDigitA || !isDigitB) continue;
+						if (numA != numB && resultIfSameLength == 0)
 						{
-							if (numA != numB && resultIfSameLength == 0)
-							{
-								resultIfSameLength = numA < numB ? -1 : 1;
-							}
-							jA++;
-							jB++;
+							resultIfSameLength = numA < numB ? -1 : 1;
 						}
+						jA++;
+						jB++;
 					}
 					while (isDigitA && isDigitB);
 					if (isDigitA != isDigitB)
@@ -129,20 +129,22 @@ namespace ICSharpCode.ILSpy.TreeNodes
 						// number must be larger
 						return isDigitA ? 1 : -1;
 					}
-					else if (resultIfSameLength != 0)
+
+					if (resultIfSameLength != 0)
 					{
 						// Both numbers are the same length (ignoring leading zeros) and at least one of
 						// the digits differed - the first difference determines the result
 						return resultIfSameLength;
 					}
-					int lA = jA - iA;
-					int lB = jB - iB;
+					var lA = jA - iA;
+					var lB = jB - iB;
 					if (lA != lB)
 					{
 						// Both numbers are equivalent but one has more leading zeros
 						return lA > lB ? -1 : 1;
 					}
-					else if (zeroA != zeroB && softResultWeight < 2)
+
+					if (zeroA != zeroB && softResultWeight < 2)
 					{
 						softResult = cmp.Compare(x, iA, 1, y, iB, 1, options);
 						softResultWeight = 2;
@@ -155,7 +157,8 @@ namespace ICSharpCode.ILSpy.TreeNodes
 			{
 				return iA < x.Length ? 1 : -1;
 			}
-			else if (softResult != 0)
+
+			if (softResult != 0)
 			{
 				return softResult;
 			}

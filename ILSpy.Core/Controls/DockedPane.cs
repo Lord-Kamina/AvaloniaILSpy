@@ -31,14 +31,14 @@ namespace ICSharpCode.ILSpy.Controls
 			AvaloniaProperty.Register<DockedPane,string>(nameof(Title));
 		
 		public string Title {
-			get { return (string)GetValue(TitleProperty); }
-			set { SetValue(TitleProperty, value); }
+			get => GetValue(TitleProperty);
+			set => SetValue(TitleProperty, value);
 		}
 
 		protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
 		{
 			base.OnApplyTemplate(e);
-			Button closeButton = (Button)e.NameScope.Find<Button>("PART_Close");
+			var closeButton = (Button)e.NameScope.Find<Button>("PART_Close");
 			if (closeButton != null)
 			{
 				closeButton.Click += closeButton_Click;
@@ -47,8 +47,7 @@ namespace ICSharpCode.ILSpy.Controls
 		
 		void closeButton_Click(object sender, RoutedEventArgs e)
 		{
-			if (CloseButtonClicked != null)
-				CloseButtonClicked(this, e);
+			CloseButtonClicked?.Invoke(this, e);
 		}
 		
 		public event EventHandler CloseButtonClicked;
@@ -56,11 +55,9 @@ namespace ICSharpCode.ILSpy.Controls
 		protected override void OnKeyDown(KeyEventArgs e)
 		{
 			base.OnKeyDown(e);
-			if (e.Key == Key.F4 && e.KeyModifiers == KeyModifiers.Control || e.Key == Key.Escape) {
-				if (CloseButtonClicked != null)
-					CloseButtonClicked(this, e);
-				e.Handled = true;
-			}
+			if ((e.Key != Key.F4 || e.KeyModifiers != KeyModifiers.Control) && e.Key != Key.Escape) return;
+			CloseButtonClicked?.Invoke(this, e);
+			e.Handled = true;
 		}
 	}
 }

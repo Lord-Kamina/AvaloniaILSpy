@@ -35,33 +35,31 @@ namespace ICSharpCode.ILSpy
 
 		public LoadedNugetPackage(string file)
 		{
-			using (var archive = ZipFile.OpenRead(file)) {
-				foreach (var entry in archive.Entries) {
-					switch (Path.GetExtension(entry.FullName)) {
-						case ".dll":
-						case ".exe":
-							var memory = new MemoryStream();
-							entry.Open().CopyTo(memory);
-							memory.Position = 0;
-							var e = new Entry(Uri.UnescapeDataString(entry.FullName), memory);
-							e.PropertyChanged += EntryPropertyChanged;
-							Entries.Add(e);
-							break;
-					}
+			using var archive = ZipFile.OpenRead(file);
+			foreach (var entry in archive.Entries) {
+				switch (Path.GetExtension(entry.FullName)) {
+					case ".dll":
+					case ".exe":
+						var memory = new MemoryStream();
+						entry.Open().CopyTo(memory);
+						memory.Position = 0;
+						var e = new Entry(Uri.UnescapeDataString(entry.FullName), memory);
+						e.PropertyChanged += EntryPropertyChanged;
+						Entries.Add(e);
+						break;
 				}
 			}
 		}
 
 		void EntryPropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
-			if (e.PropertyName == nameof(Entry.IsSelected)) {
-				var entry = (Entry)sender;
-				if (entry.IsSelected)
-					SelectedEntries.Add(entry);
-				else
-					SelectedEntries.Remove(entry);
-				OnPropertyChanged(nameof(SelectedEntries));
-			}
+			if (e.PropertyName != nameof(Entry.IsSelected)) return;
+			var entry = (Entry)sender;
+			if (entry.IsSelected)
+				SelectedEntries.Add(entry);
+			else
+				SelectedEntries.Remove(entry);
+			OnPropertyChanged(nameof(SelectedEntries));
 		}
 
 		protected virtual void OnPropertyChanged(PropertyChangedEventArgs e)
@@ -82,12 +80,12 @@ namespace ICSharpCode.ILSpy
 		public string Name { get; }
 
 		public bool IsSelected {
-			get { return isSelected; }
-			set {
-				if (isSelected != value) {
-					isSelected = value;
-					OnPropertyChanged();
-				}
+			get => isSelected;
+			set
+			{
+				if (isSelected == value) return;
+				isSelected = value;
+				OnPropertyChanged();
 			}
 		}
 

@@ -43,7 +43,7 @@ namespace ICSharpCode.ILSpy
 			Logger.Sink = new ProxyLogSink(Logger.Sink);
 #endif
 
-			AppBuilder app = result
+			var app = result
 				.UsePlatformDetect()
 				.With(new X11PlatformOptions
 				{

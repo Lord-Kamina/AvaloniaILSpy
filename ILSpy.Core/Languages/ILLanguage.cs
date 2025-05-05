@@ -44,14 +44,10 @@ namespace ICSharpCode.ILSpy
 	{
 		protected bool detectControlStructure = true;
 		
-		public override string Name {
-			get { return "IL"; }
-		}
-		
-		public override string FileExtension {
-			get { return ".il"; }
-		}
-		
+		public override string Name => "IL";
+
+		public override string FileExtension => ".il";
+
 		protected virtual ReflectionDisassembler CreateDisassembler(ITextOutput output, DecompilationOptions options)
 		{
             output.IndentationString = options.DecompilerSettings.CSharpFormattingOptions.IndentationString;
@@ -67,7 +63,7 @@ namespace ICSharpCode.ILSpy
 		public override void DecompileMethod(IMethod method, ITextOutput output, DecompilationOptions options)
 		{
 			var dis = CreateDisassembler(output, options);
-			PEFile module = (PEFile)method.ParentModule.MetadataFile;
+			using PEFile module = (PEFile)method.ParentModule?.MetadataFile;
 			dis.AssemblyResolver = module.GetAssemblyResolver();
 			dis.DebugInfo = module.GetDebugInfoOrNull();
 			dis.DisassembleMethod(module, (MethodDefinitionHandle)method.MetadataToken);
@@ -76,7 +72,7 @@ namespace ICSharpCode.ILSpy
 		public override void DecompileField(IField field, ITextOutput output, DecompilationOptions options)
 		{
 			var dis = CreateDisassembler(output, options);
-			PEFile module = (PEFile)field.ParentModule.MetadataFile;
+			using PEFile module = (PEFile)field.ParentModule?.MetadataFile;
 			dis.AssemblyResolver = module.GetAssemblyResolver();
 			dis.DebugInfo = module.GetDebugInfoOrNull();
 			dis.DisassembleField(module, (FieldDefinitionHandle)field.MetadataToken);
@@ -85,7 +81,7 @@ namespace ICSharpCode.ILSpy
 		public override void DecompileProperty(IProperty property, ITextOutput output, DecompilationOptions options)
 		{
 			var dis = CreateDisassembler(output, options);
-			PEFile module = (PEFile)property.ParentModule.MetadataFile;
+			using PEFile module = (PEFile)property.ParentModule?.MetadataFile;
 			dis.AssemblyResolver = module.GetAssemblyResolver();
 			dis.DebugInfo = module.GetDebugInfoOrNull();
 			dis.DisassembleProperty(module, (PropertyDefinitionHandle)property.MetadataToken);

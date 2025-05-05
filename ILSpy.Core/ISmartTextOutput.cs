@@ -51,11 +51,13 @@ namespace ICSharpCode.ILSpy
 		{
 			output.AddUIElement(
 				delegate {
-					Button button = new Button();
-					button.Cursor = Cursor.Default;
-					button.Margin = new Thickness(2);
-					button.Padding = new Thickness(9, 1, 9, 1);
-					button.MinWidth = 73;
+					var button = new Button
+					{
+						Cursor = Cursor.Default,
+						Margin = new Thickness(2),
+						Padding = new Thickness(9, 1, 9, 1),
+						MinWidth = 73
+					};
 					if (icon != null) {
 						button.Content = new StackPanel {
 							Orientation = Orientation.Horizontal,

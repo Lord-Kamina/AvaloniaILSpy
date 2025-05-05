@@ -40,11 +40,10 @@ namespace ICSharpCode.ILSpy
 			MainWindow.Instance.SelectionChanged += SelectionChanged;
 			writingOptions.PropertyChanged += WritingOptions_PropertyChanged;
 
-			if (MainWindow.Instance.CurrentLanguage is ILAstLanguage l) {
-				l.StepperUpdated += ILAstStepperUpdated;
-				language = l;
-				ILAstStepperUpdated(null, null);
-			}
+			if (!(MainWindow.Instance.CurrentLanguage is ILAstLanguage l)) return;
+			l.StepperUpdated += ILAstStepperUpdated;
+			language = l;
+			ILAstStepperUpdated(null, null);
 #endif
 		}
 
@@ -76,16 +75,15 @@ namespace ICSharpCode.ILSpy
 		private void FilterSettings_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
 		{
 #if DEBUG
-			if (e.PropertyName == "Language") {
-				if (language != null) {
-					language.StepperUpdated -= ILAstStepperUpdated;
-				}
-				if (MainWindow.Instance.CurrentLanguage is ILAstLanguage l) {
-					l.StepperUpdated += ILAstStepperUpdated;
-					language = l;
-					ILAstStepperUpdated(null, null);
-				}
+			if (e.PropertyName != "Language") return;
+			if (language != null) {
+				language.StepperUpdated -= ILAstStepperUpdated;
 			}
+
+			if (!(MainWindow.Instance.CurrentLanguage is ILAstLanguage l)) return;
+			l.StepperUpdated += ILAstStepperUpdated;
+			language = l;
+			ILAstStepperUpdated(null, null);
 #endif
 		}
 
@@ -105,7 +103,7 @@ namespace ICSharpCode.ILSpy
 			MainWindow.Instance.ShowInTopPane(Properties.Resources.DebugSteps, new DebugSteps());
 		}
 
-		void IPane.Closed()
+        public void Closed()
 		{
 #if DEBUG
 			MainWindow.Instance.SessionSettings.FilterSettings.PropertyChanged -= FilterSettings_PropertyChanged;
@@ -119,21 +117,21 @@ namespace ICSharpCode.ILSpy
 
 		private void ShowStateAfter_Click(object sender, RoutedEventArgs e)
 		{
-			Stepper.Node n = (Stepper.Node)tree.SelectedItem;
+			var n = (Stepper.Node)tree.SelectedItem;
 			if (n == null) return;
 			DecompileAsync(n.EndStep);
 		}
 
 		private void ShowStateBefore_Click(object sender, RoutedEventArgs e)
 		{
-			Stepper.Node n = (Stepper.Node)tree.SelectedItem;
+			var n = (Stepper.Node)tree.SelectedItem;
 			if (n == null) return;
 			DecompileAsync(n.BeginStep);
 		}
 
 		private void DebugStep_Click(object sender, RoutedEventArgs e)
 		{
-			Stepper.Node n = (Stepper.Node)tree.SelectedItem;
+			var n = (Stepper.Node)tree.SelectedItem;
 			if (n == null) return;
 			DecompileAsync(n.BeginStep, true);
 		}
@@ -155,13 +153,12 @@ namespace ICSharpCode.ILSpy
 
 		private void tree_KeyDown(object sender, KeyEventArgs e)
 		{
-			if (e.Key == Key.Enter || e.Key == Key.Return) {
-				if (e.KeyModifiers == KeyModifiers.Shift)
-					ShowStateBefore_Click(sender, e);
-				else
-					ShowStateAfter_Click(sender, e);
-				e.Handled = true;
-			}
+			if (e.Key != Key.Enter && e.Key != Key.Return) return;
+			if (e.KeyModifiers == KeyModifiers.Shift)
+				ShowStateBefore_Click(sender, e);
+			else
+				ShowStateAfter_Click(sender, e);
+			e.Handled = true;
 		}
 	}
 }

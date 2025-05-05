@@ -31,12 +31,12 @@ namespace ICSharpCode.ILSpy.Options
         /// </summary>
         public bool AllowMultipleInstances
 		{
-			get { return allowMultipleInstances; }
-			set {
-				if (allowMultipleInstances != value) {
-					allowMultipleInstances = value;
-					OnPropertyChanged();
-				}
+			get => allowMultipleInstances;
+			set
+			{
+				if (allowMultipleInstances == value) return;
+				allowMultipleInstances = value;
+				OnPropertyChanged();
 			}
 		}
 
@@ -45,14 +45,12 @@ namespace ICSharpCode.ILSpy.Options
         /// </summary>
         public bool LoadPreviousAssemblies
         {
-            get { return loadPreviousAssemblies; }
+            get => loadPreviousAssemblies;
             set
             {
-                if (loadPreviousAssemblies != value)
-                {
-                    loadPreviousAssemblies = value;
-                    OnPropertyChanged();
-                }
+	            if (loadPreviousAssemblies == value) return;
+	            loadPreviousAssemblies = value;
+	            OnPropertyChanged();
             }
         }
 

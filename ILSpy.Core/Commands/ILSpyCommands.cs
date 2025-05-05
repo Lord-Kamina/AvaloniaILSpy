@@ -22,7 +22,7 @@ using ICSharpCode.ILSpy.Analyzers;
 
 namespace ICSharpCode.ILSpy
 {
-	static class ILSpyCommands
+    internal static class ILSpyCommands
 	{
 		public static readonly AnalyzeCommand Analyze = new AnalyzeCommand();
 	}

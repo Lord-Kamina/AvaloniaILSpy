@@ -46,7 +46,7 @@ namespace ICSharpCode.ILSpy.Options
 		{
 			InitializeComponent();
 
-            Task<FontFamily[]> task = new Task<FontFamily[]>(FontLoader);
+            var task = new Task<FontFamily[]>(FontLoader);
 			task.Start();
 			task.ContinueWith(
 				delegate(Task continuation) {
@@ -54,10 +54,9 @@ namespace ICSharpCode.ILSpy.Options
 						(Action)(
 							async () => {
 								fontSelector.Items = task.Result;
-								if (continuation.Exception != null) {
-									foreach (var ex in continuation.Exception.InnerExceptions) {
-										await MessageBox.Show(ex.ToString());
-									}
+								if (continuation.Exception == null) return;
+								foreach (var ex in continuation.Exception.InnerExceptions) {
+									await MessageBox.Show(ex.ToString());
 								}
 							}),
 						DispatcherPriority.Normal
@@ -82,12 +81,8 @@ namespace ICSharpCode.ILSpy.Options
 
         static DisplaySettings currentDisplaySettings;
 		
-		public static DisplaySettings CurrentDisplaySettings {
-			get {
-				return currentDisplaySettings ?? (currentDisplaySettings = LoadDisplaySettings(ILSpySettings.Load()));
-			}
-		}
-		
+		public static DisplaySettings CurrentDisplaySettings => currentDisplaySettings ??= LoadDisplaySettings(ILSpySettings.Load());
+
 		//static bool IsSymbolFont(FontFamily fontFamily)
 		//{
 		//	foreach (var tf in fontFamily.GetTypefaces()) {
@@ -110,25 +105,27 @@ namespace ICSharpCode.ILSpy.Options
 
 		public static DisplaySettings LoadDisplaySettings(ILSpySettings settings)
 		{
-			XElement e = settings["DisplaySettings"];
-			var s = new DisplaySettings();
-			s.SelectedFont = new FontFamily((string)e.Attribute("Font") ?? FontManager.Current.DefaultFontFamilyName);
-			s.SelectedFontSize = (double?)e.Attribute("FontSize") ?? 10.0 * 4 / 3;
-			s.ShowLineNumbers = (bool?)e.Attribute("ShowLineNumbers") ?? false;
-            s.ShowDebugInfo = (bool?)e.Attribute("ShowDebugInfo") ?? false;
-            s.ShowMetadataTokens = (bool?) e.Attribute("ShowMetadataTokens") ?? false;
-            s.ShowMetadataTokensInBase10 = (bool?)e.Attribute("ShowMetadataTokensInBase10") ?? false;
-            s.EnableWordWrap = (bool?)e.Attribute("EnableWordWrap") ?? false;
-			s.SortResults = (bool?)e.Attribute("SortResults") ?? true;
-            s.FoldBraces = (bool?)e.Attribute("FoldBraces") ?? false;
-            s.ExpandMemberDefinitions = (bool?)e.Attribute("ExpandMemberDefinitions") ?? false;
-            s.ExpandUsingDeclarations = (bool?)e.Attribute("ExpandUsingDeclarations") ?? false;
-            s.IndentationUseTabs = (bool?)e.Attribute("IndentationUseTabs") ?? true;
-            s.IndentationSize = (int?)e.Attribute("IndentationSize") ?? 4;
-            s.IndentationTabSize = (int?)e.Attribute("IndentationTabSize") ?? 4;
-            s.HighlightMatchingBraces = (bool?)e.Attribute("HighlightMatchingBraces") ?? true;
+			var e = settings["DisplaySettings"];
+			var s = new DisplaySettings
+			{
+				SelectedFont = new FontFamily((string)e.Attribute("Font") ?? FontManager.Current.DefaultFontFamilyName),
+				SelectedFontSize = (double?)e.Attribute("FontSize") ?? 10.0 * 4 / 3,
+				ShowLineNumbers = (bool?)e.Attribute("ShowLineNumbers") ?? false,
+				ShowDebugInfo = (bool?)e.Attribute("ShowDebugInfo") ?? false,
+				ShowMetadataTokens = (bool?) e.Attribute("ShowMetadataTokens") ?? false,
+				ShowMetadataTokensInBase10 = (bool?)e.Attribute("ShowMetadataTokensInBase10") ?? false,
+				EnableWordWrap = (bool?)e.Attribute("EnableWordWrap") ?? false,
+				SortResults = (bool?)e.Attribute("SortResults") ?? true,
+				FoldBraces = (bool?)e.Attribute("FoldBraces") ?? false,
+				ExpandMemberDefinitions = (bool?)e.Attribute("ExpandMemberDefinitions") ?? false,
+				ExpandUsingDeclarations = (bool?)e.Attribute("ExpandUsingDeclarations") ?? false,
+				IndentationUseTabs = (bool?)e.Attribute("IndentationUseTabs") ?? true,
+				IndentationSize = (int?)e.Attribute("IndentationSize") ?? 4,
+				IndentationTabSize = (int?)e.Attribute("IndentationTabSize") ?? 4,
+				HighlightMatchingBraces = (bool?)e.Attribute("HighlightMatchingBraces") ?? true
+			};
 
-            return s;
+			return s;
 		}
 		
 		public void Save(XElement root)
@@ -152,7 +149,7 @@ namespace ICSharpCode.ILSpy.Options
             section.SetAttributeValue("IndentationTabSize", s.IndentationTabSize);
             section.SetAttributeValue("HighlightMatchingBraces", s.HighlightMatchingBraces);
 
-            XElement existingElement = root.Element("DisplaySettings");
+            var existingElement = root.Element("DisplaySettings");
 			if (existingElement != null)
 				existingElement.ReplaceWith(section);
 			else
@@ -164,7 +161,7 @@ namespace ICSharpCode.ILSpy.Options
 
         private void TextBox_PreviewTextInput(object sender, TextInputEventArgs e)
         {
-            if (!e.Text.All(char.IsDigit))
+            if (e.Text != null && !e.Text.All(char.IsDigit))
                 e.Handled = true;
         }
     }
@@ -175,35 +172,25 @@ namespace ICSharpCode.ILSpy.Options
 		public static readonly FontSizeConverter Instance = new FontSizeConverter();
 
 		public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
-        {
-            if (value == null) {
-                return 11.0;
-            }
-
-            if (value is double d) {
-				return Math.Round(d / 4 * 3);
-			}
-			
-			throw new NotImplementedException();
+		{
+			return value switch
+			{
+				null => 11.0,
+				double d => Math.Round(d / 4 * 3),
+				_ => throw new NotImplementedException()
+			};
 		}
 		
 		public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
-            if (value == null) {
-                return 11.0 * 4 / 3;
-            }
-
-            if (value is double dd) {
-                return dd * 4 / 3;
-            }
-
-            if (value is string s) {
-                if (double.TryParse(s, out double d))
-                    return d * 4 / 3;
-                return 11.0 * 4 / 3;
-            }
-
-            throw new NotImplementedException();
+	        return value switch
+	        {
+		        null => 11.0 * 4 / 3,
+		        double dd => dd * 4 / 3,
+		        string s when double.TryParse(s, out var d) => d * 4 / 3,
+		        string s => 11.0 * 4 / 3,
+		        _ => throw new NotImplementedException()
+	        };
         }
 	}
 }

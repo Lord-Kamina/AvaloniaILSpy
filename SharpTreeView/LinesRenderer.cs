@@ -18,10 +18,7 @@ namespace ICSharpCode.TreeView
 
 		static Pen pen;
 
-		SharpTreeNodeView NodeView
-		{
-			get { return TemplatedParent as SharpTreeNodeView; }
-		}
+		private SharpTreeNodeView NodeView => TemplatedParent as SharpTreeNodeView;
 
 		public override void Render(DrawingContext dc)
 		{
@@ -41,12 +38,8 @@ namespace ICSharpCode.TreeView
 
 			if (NodeView.Node.IsRoot) return;
 
-			if (NodeView.Node.IsLast) {
-				dc.DrawLine(pen, p, new Point(p.X, Bounds.Height / 2));
-			}
-			else {
-				dc.DrawLine(pen, p, new Point(p.X, Bounds.Height));
-			}
+			dc.DrawLine(pen, p,
+				NodeView.Node.IsLast ? new Point(p.X, Bounds.Height / 2) : new Point(p.X, Bounds.Height));
 
 			var current = NodeView.Node;
 			while (true) {

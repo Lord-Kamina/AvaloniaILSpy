@@ -17,8 +17,7 @@ namespace ICSharpCode.TreeView
 		/// </summary>
 		internal SharpTreeNode root;
 		readonly bool includeRoot;
-		readonly object syncRoot = new object();
-		
+
 		public TreeFlattener(SharpTreeNode modelRoot, bool includeRoot)
 		{
 			this.root = modelRoot;
@@ -32,14 +31,13 @@ namespace ICSharpCode.TreeView
 		
 		public void RaiseCollectionChanged(NotifyCollectionChangedEventArgs e)
 		{
-			if (CollectionChanged != null)
-				CollectionChanged(this, e);
+			CollectionChanged?.Invoke(this, e);
 		}
 		
 		public void NodesInserted(int index, IEnumerable<SharpTreeNode> nodes)
 		{
 			if (!includeRoot) index--;
-			foreach (SharpTreeNode node in nodes) {
+			foreach (var node in nodes) {
 				RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, node, index++));
 			}
 		}
@@ -47,7 +45,7 @@ namespace ICSharpCode.TreeView
 		public void NodesRemoved(int index, IEnumerable<SharpTreeNode> nodes)
 		{
 			if (!includeRoot) index--;
-			foreach (SharpTreeNode node in nodes) {
+			foreach (var node in nodes) {
 				RaiseCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, node, index));
 			}
 		}
@@ -64,48 +62,27 @@ namespace ICSharpCode.TreeView
 					throw new ArgumentOutOfRangeException();
 				return SharpTreeNode.GetNodeByVisibleIndex(root, includeRoot ? index : index + 1);
 			}
-			set {
-				throw new NotSupportedException();
-			}
+			set => throw new NotSupportedException();
 		}
 		
-		public int Count {
-			get {
-				return includeRoot ? root.GetTotalListLength() : root.GetTotalListLength() - 1;
-			}
-		}
-		
+		public int Count => includeRoot ? root.GetTotalListLength() : root.GetTotalListLength() - 1;
+
 		public int IndexOf(object item)
 		{
-			SharpTreeNode node = item as SharpTreeNode;
-			if (node != null && node.IsVisible && node.GetListRoot() == root) {
-				if (includeRoot)
-					return SharpTreeNode.GetVisibleIndexForNode(node);
-				else
-					return SharpTreeNode.GetVisibleIndexForNode(node) - 1;
-			} else {
-				return -1;
-			}
+			if (!(item is SharpTreeNode node) || !node.IsVisible || node.GetListRoot() != root) return -1;
+			if (includeRoot)
+				return SharpTreeNode.GetVisibleIndexForNode(node);
+			return SharpTreeNode.GetVisibleIndexForNode(node) - 1;
 		}
 		
-		bool IList.IsReadOnly {
-			get { return true; }
-		}
-		
-		bool IList.IsFixedSize {
-			get { return false; }
-		}
-		
-		bool ICollection.IsSynchronized {
-			get { return false; }
-		}
-		
-		object ICollection.SyncRoot {
-			get {
-				return syncRoot;
-			}
-		}
-		
+		bool IList.IsReadOnly => true;
+
+		bool IList.IsFixedSize => false;
+
+		bool ICollection.IsSynchronized => false;
+
+		object ICollection.SyncRoot { get; } = new object();
+
 		void IList.Insert(int index, object item)
 		{
 			throw new NotSupportedException();
@@ -133,7 +110,7 @@ namespace ICSharpCode.TreeView
 		
 		public void CopyTo(Array array, int arrayIndex)
 		{
-			foreach (object item in this)
+			foreach (var item in this)
 				array.SetValue(item, arrayIndex++);
 		}
 		
@@ -144,7 +121,7 @@ namespace ICSharpCode.TreeView
 		
 		public IEnumerator GetEnumerator()
 		{
-			for (int i = 0; i < this.Count; i++) {
+			for (var i = 0; i < this.Count; i++) {
 				yield return this[i];
 			}
 		}

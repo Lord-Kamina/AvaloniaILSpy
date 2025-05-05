@@ -38,37 +38,29 @@ namespace ICSharpCode.ILSpy.TreeNodes
 			this.module = module;
 		}
 		
-		public override object Text {
-            get { return Resources._Resources; }
-        }
+		public override object Text => Resources._Resources;
 
-        public override object Icon {
-			get { return Images.FolderClosed; }
-		}
+		public override object Icon => Images.FolderClosed;
 
-		public override object ExpandedIcon {
-			get { return Images.FolderOpen; }
-		}
-		
-		protected override void LoadChildren()
+        public override object ExpandedIcon => Images.FolderOpen;
+
+        protected override void LoadChildren()
 		{
-			foreach (Resource r in module.Resources.OrderBy(m => m.Name, NaturalStringComparer.Instance))
+			foreach (var r in module.Resources.OrderBy(m => m.Name, NaturalStringComparer.Instance))
 				this.Children.Add(ResourceTreeNode.Create(r));
 		}
 		
 		public override FilterResult Filter(FilterSettings settings)
 		{
-			if (string.IsNullOrEmpty(settings.SearchTerm))
-				return FilterResult.MatchAndRecurse;
-			else
-				return FilterResult.Recurse;
+			return string.IsNullOrEmpty(settings.SearchTerm) ? FilterResult.MatchAndRecurse : FilterResult.Recurse;
 		}
 		
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
 		{
 			EnsureLazyChildren();
-            foreach (ILSpyTreeNode child in this.Children) {
-				child.Decompile(language, output, options);
+            foreach (var sharpTreeNode in this.Children) {
+	            var child = (ILSpyTreeNode)sharpTreeNode;
+	            child.Decompile(language, output, options);
 				output.WriteLine();
 			}
 		}

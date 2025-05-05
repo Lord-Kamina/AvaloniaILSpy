@@ -34,7 +34,7 @@ namespace ICSharpCode.ILSpy
 
 		public CommandLineArguments(IEnumerable<string> arguments)
 		{
-			foreach (string arg in arguments) {
+			foreach (var arg in arguments) {
 				if (arg.Length == 0)
 					continue;
 				if (arg[0] == '/') {
@@ -43,15 +43,15 @@ namespace ICSharpCode.ILSpy
 					else if (arg.Equals("/separate", StringComparison.OrdinalIgnoreCase))
 						this.SingleInstance = false;
 					else if (arg.StartsWith("/navigateTo:", StringComparison.OrdinalIgnoreCase))
-						this.NavigateTo = arg.Substring("/navigateTo:".Length);
+						this.NavigateTo = arg["/navigateTo:".Length..];
 					else if (arg.StartsWith("/search:", StringComparison.OrdinalIgnoreCase))
-						this.Search = arg.Substring("/search:".Length);
+						this.Search = arg["/search:".Length..];
 					else if (arg.StartsWith("/language:", StringComparison.OrdinalIgnoreCase))
-						this.Language = arg.Substring("/language:".Length);
+						this.Language = arg["/language:".Length..];
 					else if (arg.Equals("/noActivate", StringComparison.OrdinalIgnoreCase))
 						this.NoActivate = true;
 					else if (arg.StartsWith("/config:", StringComparison.OrdinalIgnoreCase))
-						this.ConfigFile = arg.Substring("/config:".Length);
+						this.ConfigFile = arg["/config:".Length..];
 				}
 				else {
 					this.AssembliesToLoad.Add(arg);

@@ -32,8 +32,8 @@ namespace ICSharpCode.ILSpy
 		{
 			StreamReader reader;
 			if (stream.Length >= 2) {
-				int firstByte = stream.ReadByte();
-				int secondByte = stream.ReadByte();
+				var firstByte = stream.ReadByte();
+				var secondByte = stream.ReadByte();
 				switch ((firstByte << 8) | secondByte) {
 					case 0xfffe: // UTF-16 LE BOM / UTF-32 LE BOM
 					case 0xfeff: // UTF-16 BE BOM
@@ -62,8 +62,10 @@ namespace ICSharpCode.ILSpy
 			// Now we got a StreamReader with the correct encoding
 			// Check for XML now
 			try {
-				XmlTextReader xmlReader = new XmlTextReader(reader);
-				xmlReader.XmlResolver = null;
+				var xmlReader = new XmlTextReader(reader)
+				{
+					XmlResolver = null
+				};
 				xmlReader.MoveToContent();
 				return FileType.Xml;
 			} catch (XmlException) {
@@ -73,36 +75,39 @@ namespace ICSharpCode.ILSpy
 		
 		static bool IsUTF8(Stream fs, byte firstByte, byte secondByte)
 		{
-			int max = (int)Math.Min(fs.Length, 500000); // look at max. 500 KB
+			var max = (int)Math.Min(fs.Length, 500000); // look at max. 500 KB
 			const int ASCII = 0;
 			const int Error = 1;
 			const int UTF8  = 2;
 			const int UTF8Sequence = 3;
-			int state = ASCII;
-			int sequenceLength = 0;
+			var state = ASCII;
+			var sequenceLength = 0;
 			byte b;
-			for (int i = 0; i < max; i++) {
-				if (i == 0) {
-					b = firstByte;
-				} else if (i == 1) {
-					b = secondByte;
-				} else {
-					b = (byte)fs.ReadByte();
-				}
-				if (b < 0x80) {
+			for (var i = 0; i < max; i++)
+			{
+				b = i switch
+				{
+					0 => firstByte,
+					1 => secondByte,
+					_ => (byte)fs.ReadByte()
+				};
+				if (b < 0x80)
+				{
 					// normal ASCII character
-					if (state == UTF8Sequence) {
-						state = Error;
-						break;
-					}
-				} else if (b < 0xc0) {
+					if (state != UTF8Sequence) continue;
+					state = Error;
+					break;
+				}
+				if (b < 0xc0) {
 					// 10xxxxxx : continues UTF8 byte sequence
 					if (state == UTF8Sequence) {
 						--sequenceLength;
 						if (sequenceLength < 0) {
 							state = Error;
 							break;
-						} else if (sequenceLength == 0) {
+						}
+
+						if (sequenceLength == 0) {
 							state = UTF8;
 						}
 					} else {

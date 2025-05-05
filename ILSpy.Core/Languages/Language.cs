@@ -247,7 +247,7 @@ namespace ICSharpCode.ILSpy
 			{
 				type.GenericType.AcceptVisitor(this);
 				builder.Append('<');
-				for (int i = 0; i < type.TypeArguments.Count; i++) {
+				for (var i = 0; i < type.TypeArguments.Count; i++) {
 					if (i > 0)
 						builder.Append(',');
 					type.TypeArguments[i].AcceptVisitor(this);
@@ -270,14 +270,10 @@ namespace ICSharpCode.ILSpy
 
 			private void WriteType(IType type)
 			{
-				if (includeNamespace)
-                    EscapeName(builder, type.FullName);
-                else
-                    EscapeName(builder, type.Name);
-                if (type.TypeParameterCount > 0) {
-					builder.Append('`');
-					builder.Append(type.TypeParameterCount);
-				}
+				EscapeName(builder, includeNamespace ? type.FullName : type.Name);
+				if (type.TypeParameterCount <= 0) return;
+				builder.Append('`');
+				builder.Append(type.TypeParameterCount);
 			}
 
 			public override IType VisitTypeDefinition(ITypeDefinition type)

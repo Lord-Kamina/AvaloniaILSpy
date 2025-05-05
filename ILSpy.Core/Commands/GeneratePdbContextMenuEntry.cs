@@ -23,6 +23,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using Avalonia;
 using Avalonia.Controls;
 using ICSharpCode.Decompiler;
 using ICSharpCode.Decompiler.CSharp;
@@ -35,7 +36,7 @@ using Microsoft.Win32;
 namespace ICSharpCode.ILSpy
 {
 	[ExportContextMenuEntry(Header = "Generate portable PDB")]
-	class GeneratePdbContextMenuEntry : IContextMenuEntry
+	internal class GeneratePdbContextMenuEntry : IContextMenuEntry
 	{
 		public void Execute(TextViewContext context)
 		{
@@ -60,18 +61,20 @@ namespace ICSharpCode.ILSpy
 				await MessageBox.Show($"Cannot create PDB file for {Path.GetFileName(assembly.FileName)}, because it does not contain a PE Debug Directory Entry of type 'CodeView'.");
 				return;
 			}
-			SaveFileDialog dlg = new SaveFileDialog();
-			dlg.Title = "Save file";
-			dlg.InitialFileName = DecompilerTextView.CleanUpName(assembly.ShortName) + ".pdb";
-			dlg.Filters = new List<FileDialogFilter> { new FileDialogFilter { Name = "Portable PDB", Extensions = { "pdb" } }, new FileDialogFilter { Name = "All files", Extensions = { "*" } } };
-            dlg.Directory = Path.GetDirectoryName(assembly.FileName);
-            string fileName = await dlg.ShowAsync(App.Current.GetMainWindow());
-            if (string.IsNullOrEmpty(fileName)) return;
-			DecompilationOptions options = new DecompilationOptions();
+			var dlg = new SaveFileDialog
+			{
+				Title = "Save file",
+				InitialFileName = DecompilerTextView.CleanUpName(assembly.ShortName) + ".pdb",
+				Filters = new List<FileDialogFilter> { new FileDialogFilter { Name = "Portable PDB", Extensions = { "pdb" } }, new FileDialogFilter { Name = "All files", Extensions = { "*" } } },
+				Directory = Path.GetDirectoryName(assembly.FileName)
+			};
+			var fileName = await dlg.ShowAsync(Application.Current.GetMainWindow());
+			if (string.IsNullOrEmpty(fileName)) return;
+			var options = new DecompilationOptions();
 			MainWindow.Instance.TextView.RunWithCancellation(ct => Task<AvaloniaEditTextOutput>.Factory.StartNew(() => {
-				AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
-				Stopwatch stopwatch = Stopwatch.StartNew();
-				using (FileStream stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write)) {
+				var output = new AvaloniaEditTextOutput();
+				var stopwatch = Stopwatch.StartNew();
+				using (var stream = new FileStream(fileName, FileMode.OpenOrCreate, FileAccess.Write)) {
 					try {
 						var decompiler = new CSharpDecompiler(file, assembly.GetAssemblyResolver(), options.DecompilerSettings);
 						PortablePdbWriter.WritePdb(file, decompiler, options.DecompilerSettings, stream);
@@ -92,7 +95,7 @@ namespace ICSharpCode.ILSpy
 	}
 
     [ExportMainMenuCommand(Menu = nameof(Resources._File), Header = nameof(Resources.GeneratePortable), MenuCategory = "Save")]
-    class GeneratePdbMainMenuEntry : SimpleCommand
+    internal class GeneratePdbMainMenuEntry : SimpleCommand
 	{
 		public override bool CanExecute(object parameter)
 		{

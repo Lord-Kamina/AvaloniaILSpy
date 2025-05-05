@@ -50,12 +50,12 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 		ITypeDefinition TryResolve(PEFile module, EntityHandle handle, IType type, bool mayRetry = true)
 		{
-			DecompilerTypeSystem typeSystem = new DecompilerTypeSystem(module, module.GetAssemblyResolver(),
+			var typeSystem = new DecompilerTypeSystem(module, module.GetAssemblyResolver(),
 				TypeSystemOptions.Default | TypeSystemOptions.Uncached);
 			var t = typeSystem.MainModule.ResolveEntity(handle) as ITypeDefinition;
 			if (t != null) {
 				showExpander = t.DirectBaseTypes.Any();
-				var other = ((PEFile)t.ParentModule.MetadataFile).GetTypeSystemOrNull();
+				var other = ((PEFile)t.ParentModule?.MetadataFile)?.GetTypeSystemOrNull();
 				Debug.Assert(other != null);
 				t = other.FindType(t.FullTypeName).GetDefinition();
 			} else {
@@ -76,7 +76,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			var t = TryResolve(module, handle, type, false);
 			if (t != null) {
-				BaseTypesTreeNode.AddBaseTypes(this.Children, (PEFile)t.ParentModule.MetadataFile, t);
+				BaseTypesTreeNode.AddBaseTypes(this.Children, (PEFile)t.ParentModule?.MetadataFile, t);
 			}
 		}
 
@@ -88,14 +88,11 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 		internal static bool ActivateItem(SharpTreeNode node, ITypeDefinition def)
 		{
-			if (def != null) {
-				var assemblyListNode = node.Ancestors().OfType<AssemblyListTreeNode>().FirstOrDefault();
-				if (assemblyListNode != null) {
-					assemblyListNode.Select(assemblyListNode.FindTypeNode(def));
-					return true;
-				}
-			}
-			return false;
+			if (def == null) return false;
+			var assemblyListNode = node.Ancestors().OfType<AssemblyListTreeNode>().FirstOrDefault();
+			if (assemblyListNode == null) return false;
+			assemblyListNode.Select(assemblyListNode.FindTypeNode(def));
+			return true;
 		}
 
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
@@ -103,10 +100,6 @@ namespace ICSharpCode.ILSpy.TreeNodes
 			language.WriteCommentLine(output, language.TypeToString(type, includeNamespace: true));
 		}
 
-		IEntity IMemberTreeNode.Member {
-			get {
-				return TryResolve(module, handle, type, false);
-			}
-		}
+		IEntity IMemberTreeNode.Member => TryResolve(module, handle, type, false);
 	}
 }

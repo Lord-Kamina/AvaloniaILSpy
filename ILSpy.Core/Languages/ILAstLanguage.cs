@@ -44,7 +44,7 @@ namespace ICSharpCode.ILSpy
 
 		protected virtual void OnStepperUpdated(EventArgs e = null)
 		{
-			StepperUpdated?.Invoke(this, e ?? new EventArgs());
+			StepperUpdated?.Invoke(this, e ?? EventArgs.Empty);
 		}
 
 		public Stepper Stepper { get; set; } = new Stepper();
@@ -56,7 +56,7 @@ namespace ICSharpCode.ILSpy
 			this.name = name;
 		}
 		
-		public override string Name { get { return name; } }
+		public override string Name => name;
 
 		internal static IEnumerable<ILAstLanguage> GetDebugLanguages()
 		{
@@ -64,17 +64,13 @@ namespace ICSharpCode.ILSpy
 			yield return new BlockIL(CSharpDecompiler.GetILTransforms());
 		}
 		
-		public override string FileExtension {
-			get {
-				return ".il";
-			}
-		}
+		public override string FileExtension => ".il";
 
 		public override void DecompileMethod(IMethod method, ITextOutput output, DecompilationOptions options)
 		{
 			base.DecompileMethod(method, output, options);
 			new ReflectionDisassembler(output, options.CancellationToken)
-				.DisassembleMethodHeader(method.ParentModule.MetadataFile, (SRM.MethodDefinitionHandle)method.MetadataToken);
+				.DisassembleMethodHeader(method.ParentModule?.MetadataFile, (SRM.MethodDefinitionHandle)method.MetadataToken);
 			output.WriteLine();
 			output.WriteLine();
 		}
@@ -86,12 +82,12 @@ namespace ICSharpCode.ILSpy
 			public override void DecompileMethod(IMethod method, ITextOutput output, DecompilationOptions options)
 			{
 				base.DecompileMethod(method, output, options);
-				var module = (PEFile)method.ParentModule.MetadataFile;
+				var module = (PEFile)method.ParentModule?.MetadataFile;
 				var methodDef = module.Metadata.GetMethodDefinition((SRM.MethodDefinitionHandle)method.MetadataToken);
 				if (!methodDef.HasBody())
 					return;
 				var typeSystem = new DecompilerTypeSystem(module, module.GetAssemblyResolver());
-				ILReader reader = new ILReader(typeSystem.MainModule);
+				var reader = new ILReader(typeSystem.MainModule);
 				var methodBody = module.Reader.GetMethodBody(methodDef.RelativeVirtualAddress);
 				reader.WriteTypedIL((SRM.MethodDefinitionHandle)method.MetadataToken, methodBody, output, cancellationToken: options.CancellationToken);
 			}
@@ -109,20 +105,22 @@ namespace ICSharpCode.ILSpy
 			public override void DecompileMethod(IMethod method, ITextOutput output, DecompilationOptions options)
 			{
 				base.DecompileMethod(method, output, options);
-				var module = (PEFile)method.ParentModule.MetadataFile;
+				var module = (PEFile)method.ParentModule?.MetadataFile;
 				var metadata = module.Metadata;
 				var methodDef = metadata.GetMethodDefinition((SRM.MethodDefinitionHandle)method.MetadataToken);
 				if (!methodDef.HasBody())
 					return;
-				IAssemblyResolver assemblyResolver = module.GetAssemblyResolver();
+				var assemblyResolver = module.GetAssemblyResolver();
 				var typeSystem = new DecompilerTypeSystem(module, assemblyResolver);
-				var reader = new ILReader(typeSystem.MainModule);
-				reader.UseDebugSymbols = options.DecompilerSettings.UseDebugSymbols;
+				var reader = new ILReader(typeSystem.MainModule)
+				{
+					UseDebugSymbols = options.DecompilerSettings.UseDebugSymbols
+				};
 				var methodBody = module.Reader.GetMethodBody(methodDef.RelativeVirtualAddress);
-				ILFunction il = reader.ReadIL((SRM.MethodDefinitionHandle)method.MetadataToken, methodBody, kind: ILFunctionKind.TopLevelFunction, cancellationToken: options.CancellationToken);
+				var il = reader.ReadIL((SRM.MethodDefinitionHandle)method.MetadataToken, methodBody, kind: ILFunctionKind.TopLevelFunction, cancellationToken: options.CancellationToken);
 				var namespaces = new HashSet<string>();
 				var decompiler = new CSharpDecompiler(typeSystem, options.DecompilerSettings) { CancellationToken = options.CancellationToken };
-				ILTransformContext context = decompiler.CreateILTransformContext(il);
+				var context = decompiler.CreateILTransformContext(il);
 				context.Stepper.StepLimit = options.StepLimit;
 				context.Stepper.IsDebug = options.IsDebug;
 				try {
@@ -136,7 +134,7 @@ namespace ICSharpCode.ILSpy
 					// update stepper even if a transform crashed unexpectedly
 					if (options.StepLimit == int.MaxValue) {
 						Stepper = context.Stepper;
-						OnStepperUpdated(new EventArgs());
+						OnStepperUpdated(EventArgs.Empty);
 					}
 				}
 				(output as ISmartTextOutput)?.AddButton(Images.ViewCode, "Show Steps", delegate {

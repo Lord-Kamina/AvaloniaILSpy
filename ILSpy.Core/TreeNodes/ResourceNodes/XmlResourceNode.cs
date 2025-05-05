@@ -19,6 +19,7 @@
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 using AvaloniaEdit.Highlighting;
@@ -35,22 +36,15 @@ namespace ICSharpCode.ILSpy.Xaml
 
 		public ILSpyTreeNode CreateNode(Resource resource)
 		{
-			Stream stream = resource.TryOpenStream();
-			if (stream == null)
-				return null;
-			return CreateNode(resource.Name, stream);
+			var stream = resource.TryOpenStream();
+			return stream == null ? null : CreateNode(resource.Name, stream);
 		}
 		
 		public ILSpyTreeNode CreateNode(string key, object data)
 		{
-			if (!(data is Stream))
+			if (!(data is Stream stream))
 			    return null;
-			foreach (string fileExt in xmlFileExtensions)
-			{
-				if (key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase))
-					return new XmlResourceEntryNode(key, (Stream)data);
-			}
-			return null;
+			return xmlFileExtensions.Any(fileExt => key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase)) ? new XmlResourceEntryNode(key, stream) : null;
 		}
 	}
 	
@@ -67,21 +61,18 @@ namespace ICSharpCode.ILSpy.Xaml
 		{
 			get
 			{
-				string text = (string)Text;
+				var text = (string)Text;
 				if (text.EndsWith(".xml", StringComparison.OrdinalIgnoreCase))
 					return Images.ResourceXml;
-				else if (text.EndsWith(".xsd", StringComparison.OrdinalIgnoreCase))
+				if (text.EndsWith(".xsd", StringComparison.OrdinalIgnoreCase))
 					return Images.ResourceXsd;
-				else if (text.EndsWith(".xslt", StringComparison.OrdinalIgnoreCase))
-					return Images.ResourceXslt;
-				else
-					return Images.Resource;
+				return text.EndsWith(".xslt", StringComparison.OrdinalIgnoreCase) ? Images.ResourceXslt : Images.Resource;
 			}
 		}
 
 		public override bool View(DecompilerTextView textView)
 		{
-			AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+			var output = new AvaloniaEditTextOutput();
 			IHighlightingDefinition highlighting = null;
 			
 			textView.RunWithCancellation(
@@ -89,10 +80,10 @@ namespace ICSharpCode.ILSpy.Xaml
 					() => {
 						try {
 							// cache read XAML because stream will be closed after first read
-							if (xml == null) {
-								using (var reader = new StreamReader(Data)) {
-									xml = reader.ReadToEnd();
-								}
+							if (xml == null)
+							{
+								using var reader = new StreamReader(Data);
+								xml = reader.ReadToEnd();
 							}
 							output.Write(xml);
 							highlighting = HighlightingManager.Instance.GetDefinitionByExtension(".xml");

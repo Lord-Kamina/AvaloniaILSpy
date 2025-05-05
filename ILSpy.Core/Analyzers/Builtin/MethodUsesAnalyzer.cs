@@ -61,7 +61,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 				yield break;
 			}
 			var visitor = new TypeDefinitionCollector();
-			var genericContext = new Decompiler.TypeSystem.GenericContext(); // type parameters don't matter for this analyzer
+			var genericContext = new GenericContext(); // type parameters don't matter for this analyzer
 
 			while (blob.RemainingBytes > 0) {
 				ILOpCode opCode;
@@ -70,50 +70,65 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 				} catch (BadImageFormatException) {
 					yield break;
 				}
-				switch (opCode.GetOperandType()) {
-					case OperandType.Field:
-					case OperandType.Method:
-					case OperandType.Sig:
-					case OperandType.Tok:
-						var member = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
-						if (member.IsNil) continue;
 
-						switch (member.Kind) {
-							case HandleKind.StandaloneSignature:
-								break;
-							case HandleKind.TypeDefinition:
-							case HandleKind.TypeReference:
-							case HandleKind.TypeSpecification:
-								IType ty;
-								try {
-									ty = module.ResolveType(member, genericContext);
-								} catch (BadImageFormatException) {
-									ty = null;
-								}
-								ty?.AcceptVisitor(visitor);
-								break;
-							case HandleKind.MethodDefinition:
-							case HandleKind.MethodSpecification:
-							case HandleKind.MemberReference:
-							case HandleKind.FieldDefinition:
-								IEntity m;
-								try {
-									m = module.ResolveEntity(member, genericContext);
-								} catch (BadImageFormatException) {
-									m = null;
-								}
-								if (m != null)
-									yield return m;
-								break;
+				if (opCode.GetOperandType() == OperandType.Field || opCode.GetOperandType() == OperandType.Method ||
+				    opCode.GetOperandType() == OperandType.Sig || opCode.GetOperandType() == OperandType.Tok)
+				{
+					var member = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
+					if (member.IsNil) continue;
+
+					switch (member.Kind)
+					{
+						case HandleKind.StandaloneSignature:
+							break;
+						case HandleKind.TypeDefinition:
+						case HandleKind.TypeReference:
+						case HandleKind.TypeSpecification:
+						{
+							IType ty;
+							try
+							{
+								ty = module.ResolveType(member, genericContext);
+							}
+							catch (BadImageFormatException)
+							{
+								ty = null;
+							}
+
+							ty?.AcceptVisitor(visitor);
+							break;
 						}
-						break;
-					default:
-						try {
-							ILParser.SkipOperand(ref blob, opCode);
-						} catch (BadImageFormatException) {
-							yield break;
+						case HandleKind.MethodDefinition:
+						case HandleKind.MethodSpecification:
+						case HandleKind.MemberReference:
+						case HandleKind.FieldDefinition:
+						{
+							IEntity m;
+							try
+							{
+								m = module.ResolveEntity(member, genericContext);
+							}
+							catch (BadImageFormatException)
+							{
+								m = null;
+							}
+
+							if (m != null)
+								yield return m;
+							break;
 						}
-						break;
+					}
+				}
+				else
+				{
+					try
+					{
+						blob.SkipOperand(opCode);
+					}
+					catch (BadImageFormatException)
+					{
+						yield break;
+					}
 				}
 			}
 

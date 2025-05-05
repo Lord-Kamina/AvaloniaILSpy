@@ -61,14 +61,12 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		public string SearchTerm
 		{
-			get { return searchTerm; }
+			get => searchTerm;
 			set
 			{
-				if (searchTerm != value)
-				{
-					searchTerm = value;
-					OnPropertyChanged(nameof(SearchTerm));
-				}
+				if (searchTerm == value) return;
+				searchTerm = value;
+				OnPropertyChanged();
 			}
 		}
 
@@ -79,7 +77,7 @@ namespace ICSharpCode.ILSpy
 		{
 			if (string.IsNullOrEmpty(searchTerm))
 				return true;
-			return text.IndexOf(searchTerm, StringComparison.OrdinalIgnoreCase) >= 0;
+			return text.Contains(searchTerm, StringComparison.OrdinalIgnoreCase);
 		}
 
 		ApiVisibility showApiLevel;
@@ -89,30 +87,21 @@ namespace ICSharpCode.ILSpy
 		/// </summary>
 		public ApiVisibility ShowApiLevel
 		{
-			get { return showApiLevel; }
+			get => showApiLevel;
 			set
 			{
-				if (showApiLevel != value)
-				{
-					showApiLevel = value;
-					OnPropertyChanged(nameof(ShowApiLevel));
-				}
+				if (showApiLevel == value) return;
+				showApiLevel = value;
+				OnPropertyChanged();
 			}
 		}
 
 		public bool ShowInternalApi
 		{
-			get { return ShowApiLevel == ApiVisibility.PublicAndInternal; }
+			get => ShowApiLevel == ApiVisibility.PublicAndInternal;
 			set
 			{
-				if (ShowApiLevel == ApiVisibility.PublicAndInternal)
-				{
-					ShowApiLevel = ApiVisibility.PublicOnly;
-				}
-				else
-				{
-					ShowApiLevel = ApiVisibility.PublicAndInternal;
-				}
+				ShowApiLevel = ShowApiLevel == ApiVisibility.PublicAndInternal ? ApiVisibility.PublicOnly : ApiVisibility.PublicAndInternal;
 				OnPropertyChanged(nameof(ShowInternalApi));
 				OnPropertyChanged(nameof(ShowAllApi));
 			}
@@ -120,19 +109,12 @@ namespace ICSharpCode.ILSpy
 
 		public bool ShowAllApi
 		{
-			get { return ShowApiLevel == ApiVisibility.All; }
+			get => ShowApiLevel == ApiVisibility.All;
 			set
 			{
-				if (ShowApiLevel == ApiVisibility.All)
-				{
-					ShowApiLevel = ApiVisibility.PublicOnly;
-				}
-				else
-				{
-					ShowApiLevel = ApiVisibility.All;
-				}
+				ShowApiLevel = ShowApiLevel == ApiVisibility.All ? ApiVisibility.PublicOnly : ApiVisibility.All;
 				OnPropertyChanged(nameof(ShowInternalApi));
-				OnPropertyChanged(nameof(ShowAllApi));
+				OnPropertyChanged();
 			}
 		}
 
@@ -147,15 +129,13 @@ namespace ICSharpCode.ILSpy
 		/// </remarks>
 		public Language Language
 		{
-			get { return language; }
+			get => language;
 			set
 			{
-				if (language != value)
-				{
-					language = value;
-					LanguageVersion = language.LanguageVersions.LastOrDefault();
-					OnPropertyChanged();
-				}
+				if (language == value) return;
+				language = value;
+				LanguageVersion = language.LanguageVersions.LastOrDefault();
+				OnPropertyChanged();
 			}
 		}
 
@@ -170,14 +150,12 @@ namespace ICSharpCode.ILSpy
 		/// </remarks>
 		public LanguageVersion LanguageVersion
 		{
-			get { return languageVersion; }
-			set
+			get => languageVersion;
+			private set
 			{
-				if (languageVersion != value)
-				{
-					languageVersion = value;
-					OnPropertyChanged();
-				}
+				if (languageVersion == value) return;
+				languageVersion = value;
+				OnPropertyChanged();
 			}
 		}
 

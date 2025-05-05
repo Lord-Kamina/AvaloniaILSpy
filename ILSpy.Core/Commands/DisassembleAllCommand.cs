@@ -27,7 +27,7 @@ using ICSharpCode.ILSpy.TextView;
 namespace ICSharpCode.ILSpy
 {
     [ExportMainMenuCommand(Menu = nameof(Resources._File), Header = nameof(Resources.DEBUGDisassemble), MenuCategory = nameof(Resources.Open), MenuOrder = 2.5)]
-    sealed class DisassembleAllCommand : SimpleCommand
+    internal sealed class DisassembleAllCommand : SimpleCommand
 	{
 		public override bool CanExecute(object parameter)
 		{
@@ -37,28 +37,28 @@ namespace ICSharpCode.ILSpy
 		public override void Execute(object parameter)
 		{
 			MainWindow.Instance.TextView.RunWithCancellation(ct => Task<AvaloniaEditTextOutput>.Factory.StartNew(() => {
-				AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
-				Parallel.ForEach(MainWindow.Instance.CurrentAssemblyList.GetAssemblies(), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ct }, delegate(LoadedAssembly asm) {
-					if (!asm.HasLoadError) {
-						Stopwatch w = Stopwatch.StartNew();
-						Exception exception = null;
-						using (var writer = new System.IO.StreamWriter("c:\\temp\\disassembled\\" + asm.Text.Replace("(", "").Replace(")", "").Replace(' ', '_') + ".il")) {
-							try {
-								new ILLanguage().DecompileAssembly(asm, new Decompiler.PlainTextOutput(writer), new DecompilationOptions { FullDecompilation = true, CancellationToken = ct });
-							}
-							catch (Exception ex) {
-								writer.WriteLine(ex.ToString());
-								exception = ex;
-							}
+				var output = new AvaloniaEditTextOutput();
+				Parallel.ForEach(MainWindow.Instance.CurrentAssemblyList.GetAssemblies(), new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount, CancellationToken = ct }, delegate(LoadedAssembly asm)
+				{
+					if (asm.HasLoadError) return;
+					var w = Stopwatch.StartNew();
+					Exception exception = null;
+					using (var writer = new System.IO.StreamWriter("c:\\temp\\disassembled\\" + asm.Text.Replace("(", "").Replace(")", "").Replace(' ', '_') + ".il")) {
+						try {
+							new ILLanguage().DecompileAssembly(asm, new Decompiler.PlainTextOutput(writer), new DecompilationOptions { FullDecompilation = true, CancellationToken = ct });
 						}
-						lock (output) {
-							output.Write(asm.ShortName + " - " + w.Elapsed);
-							if (exception != null) {
-								output.Write(" - ");
-								output.Write(exception.GetType().Name);
-							}
-							output.WriteLine();
+						catch (Exception ex) {
+							writer.WriteLine(ex.ToString());
+							exception = ex;
 						}
+					}
+					lock (output) {
+						output.Write(asm.ShortName + " - " + w.Elapsed);
+						if (exception != null) {
+							output.Write(" - ");
+							output.Write(exception.GetType().Name);
+						}
+						output.WriteLine();
 					}
 				});
 				return output;

@@ -78,18 +78,14 @@ namespace ICSharpCode.ILSpy.Analyzers
 
 		public IEnumerable<PEFile> GetAllModules()
 		{
-			foreach (var module in AssemblyList.GetAssemblies()) {
-				var file = module.GetPEFileOrNull();
-				if (file == null) continue;
-				yield return file;
-			}
+			return AssemblyList.GetAssemblies().Select(module => module.GetPEFileOrNull()).Where(file => file != null);
 		}
 
 		public IEnumerable<ITypeDefinition> GetTypesInScope(CancellationToken ct)
 		{
 			if (IsLocal) {
 				var typeSystem = new DecompilerTypeSystem(TypeScope.ParentModule.MetadataFile , ((PEFile)TypeScope.ParentModule.MetadataFile).GetAssemblyResolver());
-                ITypeDefinition scope = typeScope;
+                var scope = typeScope;
                 if (memberAccessibility != Accessibility.Private && typeScope.DeclaringTypeDefinition != null)
                 {
                     scope = typeScope.DeclaringTypeDefinition;
@@ -113,7 +109,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 		{
 			var typeAccessibility = typeScope.Accessibility;
 			while (typeScope.DeclaringType != null) {
-				Accessibility accessibility = typeScope.Accessibility;
+				var accessibility = typeScope.Accessibility;
 				if ((int)typeAccessibility > (int)accessibility) {
 					typeAccessibility = accessibility;
 					if (typeAccessibility == Accessibility.Private)
@@ -133,23 +129,23 @@ namespace ICSharpCode.ILSpy.Analyzers
 		{
 			yield return self;
 
-            string reflectionTypeScopeName = typeScope.Name;
+            var reflectionTypeScopeName = typeScope.Name;
             if (typeScope.TypeParameterCount > 0)
                 reflectionTypeScopeName += "`" + typeScope.TypeParameterCount;
 
             foreach (var assembly in AssemblyList.GetAssemblies()) {
 				ct.ThrowIfCancellationRequested();
-				bool found = false;
+				var found = false;
 				var module = assembly.GetPEFileOrNull();
-				if (module == null || !module.IsAssembly)
+				if (!(module is { IsAssembly: true }))
 					continue;
 				var resolver = assembly.GetAssemblyResolver();
 				foreach (var reference in module.AssemblyReferences) {
-					using (LoadedAssembly.DisableAssemblyLoad()) {
-						if (resolver.Resolve(reference) == self) {
-							found = true;
-							break;
-						}
+					using (LoadedAssembly.DisableAssemblyLoad())
+					{
+						if (resolver.Resolve(reference) != self) continue;
+						found = true;
+						break;
 					}
 				}
 				if (found && ModuleReferencesScopeType(module.Metadata, reflectionTypeScopeName, typeScope.Namespace))
@@ -168,38 +164,28 @@ namespace ICSharpCode.ILSpy.Analyzers
 				.Where(ca => ca.GetAttributeType(self.Metadata).GetFullTypeName(self.Metadata).ToString() == "System.Runtime.CompilerServices.InternalsVisibleToAttribute");
 			var friendAssemblies = new HashSet<string>();
 			foreach (var attribute in attributes) {
-				string assemblyName = attribute.DecodeValue(typeProvider).FixedArguments[0].Value as string;
-				assemblyName = assemblyName.Split(',')[0]; // strip off any public key info
+				var assemblyName = attribute.DecodeValue(typeProvider).FixedArguments[0].Value as string;
+				assemblyName = assemblyName?.Split(',')[0]; // strip off any public key info
 				friendAssemblies.Add(assemblyName);
 			}
 
-			if (friendAssemblies.Count > 0) {
-				IEnumerable<LoadedAssembly> assemblies = AssemblyList.GetAssemblies();
+			if (friendAssemblies.Count <= 0) yield break;
+			IEnumerable<LoadedAssembly> assemblies = AssemblyList.GetAssemblies();
 
-				foreach (var assembly in assemblies) {
-					ct.ThrowIfCancellationRequested();
-					if (friendAssemblies.Contains(assembly.ShortName)) {
-						var module = assembly.GetPEFileOrNull();
-						if (module == null)
-							continue;
-						if (ModuleReferencesScopeType(module.Metadata, typeScope.Name, typeScope.Namespace))
-							yield return module;
-					}
-				}
+			foreach (var assembly in assemblies) {
+				ct.ThrowIfCancellationRequested();
+				if (!friendAssemblies.Contains(assembly.ShortName)) continue;
+				var module = assembly.GetPEFileOrNull();
+				if (module == null)
+					continue;
+				if (ModuleReferencesScopeType(module.Metadata, typeScope.Name, typeScope.Namespace))
+					yield return module;
 			}
 		}
 
 		bool ModuleReferencesScopeType(MetadataReader metadata, string typeScopeName, string typeScopeNamespace)
 		{
-			bool hasRef = false;
-			foreach (var h in metadata.TypeReferences) {
-				var typeRef = metadata.GetTypeReference(h);
-				if (metadata.StringComparer.Equals(typeRef.Name, typeScopeName) && metadata.StringComparer.Equals(typeRef.Namespace, typeScopeNamespace)) {
-					hasRef = true;
-					break;
-				}
-			}
-			return hasRef;
+			return metadata.TypeReferences.Select(metadata.GetTypeReference).Any(typeRef => metadata.StringComparer.Equals(typeRef.Name, typeScopeName) && metadata.StringComparer.Equals(typeRef.Namespace, typeScopeNamespace));
 		}
 		#endregion
 	}

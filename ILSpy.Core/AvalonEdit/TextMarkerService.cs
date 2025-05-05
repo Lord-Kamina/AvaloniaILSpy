@@ -38,19 +38,15 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		
 		public TextMarkerService(TextView textView)
 		{
-			if (textView == null)
-				throw new ArgumentNullException(nameof(textView));
-			this.textView = textView;
+            ArgumentNullException.ThrowIfNull(textView);
+            this.textView = textView;
 			textView.DocumentChanged += OnDocumentChanged;
 			OnDocumentChanged(null, null);
 		}
 
 		void OnDocumentChanged(object sender, EventArgs e)
 		{
-			if (textView.Document != null)
-				markers = new TextSegmentCollection<TextMarker>(textView.Document);
-			else
-				markers = null;
+			markers = textView.Document != null ? new TextSegmentCollection<TextMarker>(textView.Document) : null;
 		}
 		
 		#region ITextMarkerService
@@ -59,13 +55,13 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 			if (markers == null)
 				throw new InvalidOperationException("Cannot create a marker when not attached to a document");
 			
-			int textLength = textView.Document.TextLength;
+			var textLength = textView.Document.TextLength;
 			if (startOffset < 0 || startOffset > textLength)
 				throw new ArgumentOutOfRangeException(nameof(startOffset), startOffset, "Value must be between 0 and " + textLength);
 			if (length < 0 || startOffset + length > textLength)
 				throw new ArgumentOutOfRangeException(nameof(length), length, "length must not be negative and startOffset+length must not be after the end of the document");
 			
-			TextMarker m = new TextMarker(this, startOffset, length);
+			var m = new TextMarker(this, startOffset, length);
 			markers.Add(m);
 			// no need to mark segment for redraw: the text marker is invisible until a property is set
 			return m;
@@ -73,37 +69,28 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		
 		public IEnumerable<ITextMarker> GetMarkersAtOffset(int offset)
 		{
-			if (markers == null)
-				return Enumerable.Empty<ITextMarker>();
-			else
-				return markers.FindSegmentsContaining(offset);
+			return markers == null ? Enumerable.Empty<ITextMarker>() : markers.FindSegmentsContaining(offset);
 		}
 		
-		public IEnumerable<ITextMarker> TextMarkers {
-			get { return markers ?? Enumerable.Empty<ITextMarker>(); }
-		}
-		
+		public IEnumerable<ITextMarker> TextMarkers => markers ?? Enumerable.Empty<ITextMarker>();
+
 		public void RemoveAll(Predicate<ITextMarker> predicate)
 		{
-			if (predicate == null)
-				throw new ArgumentNullException(nameof(predicate));
-			if (markers != null) {
-				foreach (TextMarker m in markers.ToArray()) {
-					if (predicate(m))
-						Remove(m);
-				}
+            ArgumentNullException.ThrowIfNull(predicate);
+            if (markers == null) return;
+            foreach (var m in markers.ToArray()) {
+				if (predicate(m))
+					Remove(m);
 			}
 		}
 		
 		public void Remove(ITextMarker marker)
 		{
-			if (marker == null)
-				throw new ArgumentNullException(nameof(marker));
-			TextMarker m = marker as TextMarker;
-			if (markers != null && markers.Remove(m)) {
-				Redraw(m);
-				m.OnDeleted();
-			}
+            ArgumentNullException.ThrowIfNull(marker);
+            var m = marker as TextMarker;
+            if (markers == null || !markers.Remove(m)) return;
+            Redraw(m);
+			m.OnDeleted();
 		}
 		
 		/// <summary>
@@ -112,8 +99,7 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		internal void Redraw(ISegment segment)
 		{
 			textView.Redraw(segment, DispatcherPriority.Normal);
-			if (RedrawRequested != null)
-				RedrawRequested(this, EventArgs.Empty);
+			RedrawRequested?.Invoke(this, EventArgs.Empty);
 		}
 		
 		public event EventHandler RedrawRequested;
@@ -245,9 +231,7 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		
 		public TextMarker(TextMarkerService service, int startOffset, int length)
 		{
-			if (service == null)
-				throw new ArgumentNullException(nameof(service));
-			this.service = service;
+			this.service = service ?? throw new ArgumentNullException(nameof(service));
 			this.StartOffset = startOffset;
 			this.Length = length;
 			this.markerTypes = TextMarkerTypes.None;
@@ -255,10 +239,8 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		
 		public event EventHandler Deleted;
 		
-		public bool IsDeleted {
-			get { return !this.IsConnectedToCollection; }
-		}
-		
+		public bool IsDeleted => !IsConnectedToCollection;
+
 		public void Delete()
 		{
 			service.Remove(this);
@@ -266,8 +248,7 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		
 		internal void OnDeleted()
 		{
-			if (Deleted != null)
-				Deleted(this, EventArgs.Empty);
+			Deleted?.Invoke(this, EventArgs.Empty);
 		}
 		
 		void Redraw()
@@ -278,48 +259,48 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		Color? backgroundColor;
 		
 		public Color? BackgroundColor {
-			get { return backgroundColor; }
-			set {
-				if (backgroundColor.GetValueOrDefault().ToUint32() != value.GetValueOrDefault().ToUint32()) {
-					backgroundColor = value;
-					Redraw();
-				}
+			get => backgroundColor;
+			set
+			{
+				if (backgroundColor.GetValueOrDefault().ToUint32() == value.GetValueOrDefault().ToUint32()) return;
+				backgroundColor = value;
+				Redraw();
 			}
 		}
 		
 		Color? foregroundColor;
 		
 		public Color? ForegroundColor {
-			get { return foregroundColor; }
-			set {
-				if (foregroundColor.GetValueOrDefault().ToUint32() != value.GetValueOrDefault().ToUint32()) {
-					foregroundColor = value;
-					Redraw();
-				}
+			get => foregroundColor;
+			set
+			{
+				if (foregroundColor.GetValueOrDefault().ToUint32() == value.GetValueOrDefault().ToUint32()) return;
+				foregroundColor = value;
+				Redraw();
 			}
 		}
 		
 		FontWeight? fontWeight;
 		
 		public FontWeight? FontWeight {
-			get { return fontWeight; }
-			set {
-				if (fontWeight != value) {
-					fontWeight = value;
-					Redraw();
-				}
+			get => fontWeight;
+			set
+			{
+				if (fontWeight == value) return;
+				fontWeight = value;
+				Redraw();
 			}
 		}
 		
 		FontStyle? fontStyle;
 		
 		public FontStyle? FontStyle {
-			get { return fontStyle; }
-			set {
-				if (fontStyle != value) {
-					fontStyle = value;
-					Redraw();
-				}
+			get => fontStyle;
+			set
+			{
+				if (fontStyle == value) return;
+				fontStyle = value;
+				Redraw();
 			}
 		}
 		
@@ -328,24 +309,24 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		TextMarkerTypes markerTypes;
 		
 		public TextMarkerTypes MarkerTypes {
-			get { return markerTypes; }
-			set {
-				if (markerTypes != value) {
-					markerTypes = value;
-					Redraw();
-				}
+			get => markerTypes;
+			set
+			{
+				if (markerTypes == value) return;
+				markerTypes = value;
+				Redraw();
 			}
 		}
 		
 		Color markerColor;
 		
 		public Color MarkerColor {
-			get { return markerColor; }
-			set {
-				if (markerColor.ToUint32() != value.ToUint32()) {
-					markerColor = value;
-					Redraw();
-				}
+			get => markerColor;
+			set
+			{
+				if (markerColor.ToUint32() == value.ToUint32()) return;
+				markerColor = value;
+				Redraw();
 			}
 		}
 		

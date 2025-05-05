@@ -45,16 +45,16 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		IEnumerable<IEntity> AnalyzeType(IMethod analyzedEntity, ITypeDefinition type)
 		{
             var token = analyzedEntity.MetadataToken;
-            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition.MetadataToken;
-            var module = analyzedEntity.DeclaringTypeDefinition.ParentModule.MetadataFile ;
+            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition?.MetadataToken;
+            var module = analyzedEntity.DeclaringTypeDefinition?.ParentModule?.MetadataFile ;
             var allTypes = type.GetAllBaseTypeDefinitions();
-            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule.MetadataFile  == module))
+            if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule?.MetadataFile  == module))
                 yield break;
 
 			foreach (var method in type.Methods) {
 				if (!method.IsOverride) continue;
                 var baseMembers = InheritanceHelper.GetBaseMembers(method, false);
-                if (baseMembers.Any(p => p.MetadataToken == token && p.ParentModule.MetadataFile  == module)) {
+                if (baseMembers.Any(p => p.MetadataToken == token && p.ParentModule?.MetadataFile  == module)) {
                     yield return method;
 				}
 			}
@@ -62,7 +62,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 		public bool Show(ISymbol entity)
 		{
-			return entity is IMethod method && method.IsOverridable && method.DeclaringType.Kind != TypeKind.Interface;
+			return entity is IMethod { IsOverridable: true } method && method.DeclaringType.Kind != TypeKind.Interface;
 		}
 	}
 }

@@ -462,22 +462,19 @@ namespace ICSharpCode.ILSpy.TextView
 			// Some actions like loading an assembly list cause several selection changes in the tree view,
 			// and each of those will start a decompilation action.
 			
-			bool isDecompilationScheduled = this.nextDecompilationRun != null;
-			if (this.nextDecompilationRun != null)
-				this.nextDecompilationRun.TaskCompletionSource.TrySetCanceled();
+			var isDecompilationScheduled = this.nextDecompilationRun != null;
+			this.nextDecompilationRun?.TaskCompletionSource.TrySetCanceled();
 			this.nextDecompilationRun = new DecompilationContext(language, treeNodes.ToArray(), options);
 			var task = this.nextDecompilationRun.TaskCompletionSource.Task;
 			if (!isDecompilationScheduled) {
                 Dispatcher.UIThread.InvokeAsync(
-                    new Action(
-					delegate {
-						var context = this.nextDecompilationRun;
-						this.nextDecompilationRun = null;
-						if (context != null)
-							DoDecompile(context, DefaultOutputLengthLimit)
-								.ContinueWith(t => context.TaskCompletionSource.SetFromTask(t)).HandleExceptions();
-					}
-				), DispatcherPriority.Background);
+                    delegate {
+	                    var context = this.nextDecompilationRun;
+	                    this.nextDecompilationRun = null;
+	                    if (context != null)
+		                    DoDecompile(context, DefaultOutputLengthLimit)
+			                    .ContinueWith(t => context.TaskCompletionSource.SetFromTask(t)).HandleExceptions();
+                    }, DispatcherPriority.Background);
 			}
 			return task;
 		}
@@ -512,7 +509,7 @@ namespace ICSharpCode.ILSpy.TextView
 			.Catch<Exception>(exception => {
 					textEditor.SyntaxHighlighting = null;
 					Debug.WriteLine("Decompiler crashed: " + exception.ToString());
-					AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+					var output = new AvaloniaEditTextOutput();
 					if (exception is OutputLengthExceededException) {
 						WriteOutputLengthExceededMessage(output, context, outputLengthLimit == DefaultOutputLengthLimit);
 					} else {
@@ -527,7 +524,7 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			Debug.WriteLine("Start decompilation of {0} tree nodes", context.TreeNodes.Length);
 			
-			TaskCompletionSource<AvaloniaEditTextOutput> tcs = new TaskCompletionSource<AvaloniaEditTextOutput>();
+			var tcs = new TaskCompletionSource<AvaloniaEditTextOutput>();
 			if (context.TreeNodes.Length == 0) {
 				// If there's nothing to be decompiled, don't bother starting up a thread.
 				// (Improves perf in some cases since we don't have to wait for the thread-pool to accept our task)
@@ -535,27 +532,27 @@ namespace ICSharpCode.ILSpy.TextView
 				return tcs.Task;
 			}
 			
-			Task.Run(new Action(
-				delegate {
-					try {
-						AvaloniaEditTextOutput textOutput = new AvaloniaEditTextOutput();
-						textOutput.LengthLimit = outputLengthLimit;
-						DecompileNodes(context, textOutput);
-						textOutput.PrepareDocument();
-						tcs.SetResult(textOutput);
-					} catch (OperationCanceledException) {
-						tcs.SetCanceled();
-					} catch (Exception ex) {
-						tcs.SetException(ex);
-					}
-				}));
+			Task.Run(delegate
+			{
+				var textOutput = new AvaloniaEditTextOutput();
+				try {
+					textOutput.LengthLimit = outputLengthLimit;
+					DecompileNodes(context, textOutput);
+					textOutput.PrepareDocument();
+					tcs.SetResult(textOutput);
+				} catch (OperationCanceledException) {
+					tcs.SetCanceled();
+				} catch (Exception ex) {
+					tcs.SetException(ex);
+				}
+			});
 			return tcs.Task;
 		}
 		
 		void DecompileNodes(DecompilationContext context, ITextOutput textOutput)
 		{
 			var nodes = context.TreeNodes;
-			for (int i = 0; i < nodes.Length; i++) {
+			for (var i = 0; i < nodes.Length; i++) {
 				if (i > 0)
 					textOutput.WriteLine();
 				
@@ -572,11 +569,9 @@ namespace ICSharpCode.ILSpy.TextView
 		/// </summary>
 		void WriteOutputLengthExceededMessage(ISmartTextOutput output, DecompilationContext context, bool wasNormalLimit)
 		{
-			if (wasNormalLimit) {
-				output.WriteLine("You have selected too much code for it to be displayed automatically.");
-			} else {
-				output.WriteLine("You have selected too much code; it cannot be displayed here.");
-			}
+			output.WriteLine(wasNormalLimit
+				? "You have selected too much code for it to be displayed automatically."
+				: "You have selected too much code; it cannot be displayed here.");
 			output.WriteLine();
 			if (wasNormalLimit) {
 				output.AddButton(
@@ -687,22 +682,25 @@ namespace ICSharpCode.ILSpy.TextView
         /// </summary>
         public async void SaveToDisk(Language language, IEnumerable<ILSpyTreeNode> treeNodes, DecompilationOptions options)
         {
-            if (!treeNodes.Any())
+	        var ilSpyTreeNodes = treeNodes as ILSpyTreeNode[] ?? treeNodes.ToArray();
+	        if (ilSpyTreeNodes.Length == 0)
                 return;
 
-            SaveFileDialog dlg = new SaveFileDialog();
-			dlg.Title = "Save file";
-            dlg.DefaultExtension = language.FileExtension;
-            dlg.Filters = new List<FileDialogFilter>()
+            var dlg = new SaveFileDialog
             {
-                new FileDialogFilter() { Name = language.Name, Extensions = { language.FileExtension } },
-                new FileDialogFilter(){ Name = Properties.Resources.AllFiles, Extensions = { "*" } }
+	            Title = "Save file",
+	            DefaultExtension = language.FileExtension,
+	            Filters = new List<FileDialogFilter>()
+	            {
+		            new FileDialogFilter() { Name = language.Name, Extensions = { language.FileExtension } },
+		            new FileDialogFilter(){ Name = Properties.Resources.AllFiles, Extensions = { "*" } }
+	            },
+	            InitialFileName = CleanUpName(ilSpyTreeNodes.First().ToString()) + language.FileExtension
             };
-            dlg.InitialFileName = CleanUpName(treeNodes.First().ToString()) + language.FileExtension;
             var fileName = await dlg.ShowAsync(App.Current.GetMainWindow());
             if (fileName != null)
             {
-                SaveToDisk(new DecompilationContext(language, treeNodes.ToArray(), options), fileName);
+                SaveToDisk(new DecompilationContext(language, ilSpyTreeNodes.ToArray(), options), fileName);
             }
         }
 
@@ -729,7 +727,7 @@ namespace ICSharpCode.ILSpy.TextView
 					Debug.WriteLine("Decompiler crashed: " + ex.ToString());
 					// Unpack aggregate exceptions as long as there's only a single exception:
 					// (assembly load errors might produce nested aggregate exceptions)
-					AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+					var output = new AvaloniaEditTextOutput();
 					output.WriteLine(ex.ToString());
 					ShowOutput(output);
 				}).HandleExceptions();
@@ -737,13 +735,13 @@ namespace ICSharpCode.ILSpy.TextView
 
 		Task<AvaloniaEditTextOutput> SaveToDiskAsync(DecompilationContext context, string fileName)
 		{
-			TaskCompletionSource<AvaloniaEditTextOutput> tcs = new TaskCompletionSource<AvaloniaEditTextOutput>();
-			Thread thread = new Thread(new ThreadStart(
+			var tcs = new TaskCompletionSource<AvaloniaEditTextOutput>();
+			var thread = new Thread(new ThreadStart(
 				delegate {
 					try {
-						Stopwatch stopwatch = new Stopwatch();
+						var stopwatch = new Stopwatch();
 						stopwatch.Start();
-						using (StreamWriter w = new StreamWriter(fileName)) {
+						using (var w = new StreamWriter(fileName)) {
 							try {
 								DecompileNodes(context, new PlainTextOutput(w));
 							} catch (OperationCanceledException) {
@@ -753,7 +751,7 @@ namespace ICSharpCode.ILSpy.TextView
 							}
 						}
 						stopwatch.Stop();
-						AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+						var output = new AvaloniaEditTextOutput();
 						output.WriteLine("Decompilation complete in " + stopwatch.Elapsed.TotalSeconds.ToString("F1") + " seconds.");
 						output.WriteLine();
 						if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
@@ -787,10 +785,10 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			if (referenceElementGenerator.References == null)
 				return null;
-			TextViewPosition? position = GetPositionFromMousePosition();
+			var position = GetPositionFromMousePosition();
 			if (position == null)
 				return null;
-			int offset = textEditor.Document.GetOffset(position.Value.Location);
+			var offset = textEditor.Document.GetOffset(position.Value.Location);
 			return referenceElementGenerator.References.FindSegmentsContaining(offset).FirstOrDefault();
 		}
 		
@@ -801,9 +799,7 @@ namespace ICSharpCode.ILSpy.TextView
 			if (position == null)
 				return null;
 			var lineLength = textEditor.Document.GetLineByNumber(position.Value.Line).Length + 1;
-			if (position.Value.Column == lineLength)
-				return null;
-			return position;
+			return position.Value.Column == lineLength ? null : position;
 		}
 		
 		public DecompilerTextViewState GetState()

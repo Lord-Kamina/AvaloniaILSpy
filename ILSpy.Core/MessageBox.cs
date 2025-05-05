@@ -63,13 +63,11 @@ namespace ICSharpCode.ILSpy
 
 		public static async Task<MessageBoxResult> Show(Window owner, string messageBoxText, string caption, MessageBoxButton button, MessageBoxImage icon, MessageBoxResult defaultResult, MessageBoxOptions options)
 		{
-			if (caption == null)
-				throw new ArgumentNullException(nameof(caption));
-			if (messageBoxText == null)
-				throw new ArgumentNullException(nameof(messageBoxText));
+            ArgumentNullException.ThrowIfNull(caption);
+            ArgumentNullException.ThrowIfNull(messageBoxText);
 
-			// Button Strings
-			var buttons = Buttons[button];
+            // Button Strings
+            var buttons = Buttons[button];
 
 			// Show Message Window
 			var win = new CustomDialog(caption, messageBoxText, AcceptButtonID[button], CancelButtonID[button], buttons);

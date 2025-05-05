@@ -28,13 +28,13 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			if (!type.HasExtensionMethods)
 				yield break;
 
-			foreach (IMethod method in type.Methods) {
+			foreach (var method in type.Methods) {
 				if (!method.IsExtensionMethod) continue;
 
 				var firstParamType = method.Parameters[0].Type.GetDefinition();
 				if (firstParamType != null &&
 					firstParamType.MetadataToken == analyzedType.MetadataToken &&
-					firstParamType.ParentModule.MetadataFile  == analyzedType.ParentModule.MetadataFile )
+					firstParamType.ParentModule?.MetadataFile  == analyzedType.ParentModule?.MetadataFile )
 					yield return method;
 			}
 		}

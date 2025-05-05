@@ -13,11 +13,9 @@ namespace ICSharpCode.ILSpy.Controls
 
         public PlatformDependentWindow()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-            {
-                originalInputEventHanlder = PlatformImpl.Input;
-                PlatformImpl.Input = HandleInput;
-            }
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
+            originalInputEventHanlder = PlatformImpl.Input;
+            PlatformImpl.Input = HandleInput;
         }
 
         void HandleInput(RawInputEventArgs args)
@@ -53,22 +51,18 @@ namespace ICSharpCode.ILSpy.Controls
             base.OnKeyDown(e);
 
             // Close shortcut
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) return;
+            // Cmd + W
+            if (!e.Handled && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.W)
             {
-                // Cmd + W
-                if (!e.Handled && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.W)
-                {
-                    Close();
-                    e.Handled = true;
-                }
-
-                // Cmd + Q
-                if (!e.Handled && e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.Q)
-                {
-                    Application.Current.Exit();
-                    e.Handled = true;
-                }
+                Close();
+                e.Handled = true;
             }
+
+            // Cmd + Q
+            if (e.Handled || !e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.Key != Key.Q) return;
+            Application.Current.Exit();
+            e.Handled = true;
         }
     }
 }

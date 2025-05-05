@@ -55,15 +55,15 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 			var typeDef = module.Metadata.GetTypeDefinition((TypeDefinitionHandle)typeDefinition.MetadataToken);
 			var baseTypes = typeDefinition.DirectBaseTypes.ToArray();
-			int i = 0;
+			var i = 0;
 			if (typeDefinition.Kind == TypeKind.Interface) {
 				i++;
 			} else if (!typeDef.BaseType.IsNil) {
 				children.Add(new BaseTypesEntryNode(module, typeDef.BaseType, baseTypes[i], false));
 				i++;
 			}
-			foreach (var h in typeDef.GetInterfaceImplementations()) {
-				var impl = module.Metadata.GetInterfaceImplementation(h);
+			foreach (var impl in typeDef.GetInterfaceImplementations().Select(h => module.Metadata.GetInterfaceImplementation(h)))
+			{
 				children.Add(new BaseTypesEntryNode(module, impl.Interface, baseTypes[i], true));
 				i++;
 			}
@@ -72,7 +72,9 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
 		{
 			EnsureLazyChildren();
-			foreach (ILSpyTreeNode child in this.Children) {
+			foreach (var sharpTreeNode in this.Children)
+			{
+				var child = (ILSpyTreeNode)sharpTreeNode;
 				child.Decompile(language, output, options);
 			}
 		}

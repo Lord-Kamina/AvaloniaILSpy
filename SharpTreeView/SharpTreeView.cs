@@ -48,8 +48,8 @@ namespace ICSharpCode.TreeView
 
 		public SharpTreeNode Root
 		{
-			get { return (SharpTreeNode)GetValue(RootProperty); }
-			set { SetValue(RootProperty, value); }
+			get => GetValue(RootProperty);
+			set => SetValue(RootProperty, value);
 		}
 
 		public static readonly StyledProperty<bool> ShowRootProperty =
@@ -57,8 +57,8 @@ namespace ICSharpCode.TreeView
 
 		public bool ShowRoot
 		{
-			get { return (bool)GetValue(ShowRootProperty); }
-			set { SetValue(ShowRootProperty, value); }
+			get => GetValue(ShowRootProperty);
+			set => SetValue(ShowRootProperty, value);
 		}
 
 		public static readonly StyledProperty<bool> ShowRootExpanderProperty =
@@ -66,8 +66,8 @@ namespace ICSharpCode.TreeView
 
 		public bool ShowRootExpander
 		{
-			get { return (bool)GetValue(ShowRootExpanderProperty); }
-			set { SetValue(ShowRootExpanderProperty, value); }
+			get => GetValue(ShowRootExpanderProperty);
+			set => SetValue(ShowRootExpanderProperty, value);
 		}
 
 		public static readonly StyledProperty<bool> AllowDropOrderProperty =
@@ -75,29 +75,29 @@ namespace ICSharpCode.TreeView
 
 		public bool AllowDropOrder
 		{
-			get { return (bool)GetValue(AllowDropOrderProperty); }
-			set { SetValue(AllowDropOrderProperty, value); }
+			get => GetValue(AllowDropOrderProperty);
+			set => SetValue(AllowDropOrderProperty, value);
 		}
 
 		public static readonly StyledProperty<bool> ShowLinesProperty =
 			AvaloniaProperty.Register<SharpTreeView, bool>(nameof(ShowLines), defaultValue: true);
 
 		public bool ShowLines {
-			get { return (bool)GetValue(ShowLinesProperty); }
-			set { SetValue(ShowLinesProperty, value); }
+			get => GetValue(ShowLinesProperty);
+			set => SetValue(ShowLinesProperty, value);
 		}
 
 		public static readonly StyledProperty<bool> IsTextSearchCaseSensitiveProperty =
 			AvaloniaProperty.Register<SharpTreeView, bool>(nameof(IsTextSearchCaseSensitive), defaultValue: false);
 
 		public bool IsTextSearchCaseSensitive {
-			get { return (bool)GetValue(IsTextSearchCaseSensitiveProperty); }
-			set { SetValue(IsTextSearchCaseSensitiveProperty, value); }
+			get => GetValue(IsTextSearchCaseSensitiveProperty);
+			set => SetValue(IsTextSearchCaseSensitiveProperty, value);
 		}
 
 		public static bool GetShowAlternation(AvaloniaObject obj)
 		{
-			return (bool)obj.GetValue(ShowAlternationProperty);
+			return obj.GetValue(ShowAlternationProperty);
 		}
 
 		public static void SetShowAlternation(AvaloniaObject obj, bool value)
@@ -130,65 +130,60 @@ namespace ICSharpCode.TreeView
 
 		class UpdateLock : IDisposable
 		{
-			SharpTreeView instance;
+			private readonly SharpTreeView _instance;
 
 			public UpdateLock(SharpTreeView instance)
 			{
-				this.instance = instance;
-				this.instance.updatesLocked = true;
+				this._instance = instance;
+				this._instance.updatesLocked = true;
 			}
 
 			public void Dispose()
 			{
-				this.instance.updatesLocked = false;
+				this._instance.updatesLocked = false;
 			}
 		}
 
 		void Reload()
 		{
-			if (flattener != null) {
-				flattener.Stop();
+			flattener?.Stop();
+			if (Root == null) return;
+			if (!(ShowRoot && ShowRootExpander)) {
+				Root.IsExpanded = true;
 			}
-			if (Root != null) {
-				if (!(ShowRoot && ShowRootExpander)) {
-					Root.IsExpanded = true;
-				}
-				flattener = new TreeFlattener(Root, ShowRoot);
-				flattener.CollectionChanged += flattener_CollectionChanged;
-				this.Items = flattener;
-			}
+			flattener = new TreeFlattener(Root, ShowRoot);
+			flattener.CollectionChanged += flattener_CollectionChanged;
+			this.Items = flattener;
 		}
 
 		void flattener_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
 			// Deselect nodes that are being hidden, if any remain in the tree
-			if (e.Action == NotifyCollectionChangedAction.Remove && Items.Any()) {
-				List<SharpTreeNode> selectedOldItems = null;
-				foreach (SharpTreeNode node in e.OldItems) {
-					if (node.IsSelected) {
-						if (selectedOldItems == null)
-							selectedOldItems = new List<SharpTreeNode>();
-						selectedOldItems.Add(node);
-					}
-				}
-				if (!updatesLocked && selectedOldItems != null) {
-					var list = SelectedItems.Cast<SharpTreeNode>().Except(selectedOldItems).ToList();
-					UpdateFocusedNode(list, Math.Max(0, e.OldStartingIndex - 1));
-				}
+			if (e.Action != NotifyCollectionChangedAction.Remove || !Items.Any()) return;
+			List<SharpTreeNode> selectedOldItems = null;
+			foreach (SharpTreeNode node in e.OldItems)
+			{
+				if (!node.IsSelected) continue;
+				if (selectedOldItems == null)
+					selectedOldItems = new List<SharpTreeNode>();
+				selectedOldItems.Add(node);
 			}
+
+			if (updatesLocked || selectedOldItems == null) return;
+			var list = SelectedItems.Cast<SharpTreeNode>().Except(selectedOldItems).ToList();
+			UpdateFocusedNode(list, Math.Max(0, e.OldStartingIndex - 1));
 		}
 
 		void UpdateFocusedNode(List<SharpTreeNode> newSelection, int topSelectedIndex)
 		{
 			if (updatesLocked) return;
 			SetSelectedNodes(newSelection ?? Enumerable.Empty<SharpTreeNode>());
-			if (SelectedItem == null) {
-				// if we removed all selected nodes, then move the focus to the node 
-				// preceding the first of the old selected nodes
-				SelectedIndex = topSelectedIndex;
-				if (SelectedItem != null)
-					FocusNode((SharpTreeNode)SelectedItem);
-			}
+			if (SelectedItem != null) return;
+			// if we removed all selected nodes, then move the focus to the node 
+			// preceding the first of the old selected nodes
+			SelectedIndex = topSelectedIndex;
+			if (SelectedItem != null)
+				FocusNode((SharpTreeNode)SelectedItem);
 		}
 
 		protected override IItemContainerGenerator CreateItemContainerGenerator()
@@ -202,13 +197,12 @@ namespace ICSharpCode.TreeView
 		protected override void OnContainersMaterialized(ItemContainerEventArgs e)
 		{
 			base.OnContainersMaterialized(e);
-			foreach (var item in e.Containers) {
-				var container = item.ContainerControl as SharpTreeViewItem;
+			foreach (var item in e.Containers)
+			{
+				if (!(item.ContainerControl is SharpTreeViewItem container)) continue;
 				container.ParentTreeView = this;
 				// Make sure that the line renderer takes into account the new bound data
-				if (container.NodeView != null) {
-					container.NodeView.LinesRenderer.InvalidateVisual();
-				}
+				container.NodeView?.LinesRenderer.InvalidateVisual();
 			}
 		}
 
@@ -218,23 +212,17 @@ namespace ICSharpCode.TreeView
 
 			foreach (var item in e.Containers)
 			{
-				var container = item.ContainerControl as SharpTreeViewItem;
+				if (!(item.ContainerControl is SharpTreeViewItem container)) continue;
 				container.ParentTreeView = this;
 				// Make sure that the line renderer takes into account the new bound data
-				if (container.NodeView != null)
-				{
-					container.NodeView.LinesRenderer.InvalidateVisual();
-				}
+				container.NodeView?.LinesRenderer.InvalidateVisual();
 			}
 		}
 
 		internal IControl ContainerFromItem(object item)
 		{
-			int index = IndexOf(Items, item);
-			if (index != -1) {
-				return ItemContainerGenerator.ContainerFromIndex(index);
-			}
-			return null;
+			var index = IndexOf(Items, item);
+			return index != -1 ? ItemContainerGenerator.ContainerFromIndex(index) : null;
 		}
 		
 		bool doNotScrollOnExpanding;
@@ -248,30 +236,30 @@ namespace ICSharpCode.TreeView
 			if (doNotScrollOnExpanding)
 				return;
 
-			SharpTreeNode lastVisibleChild = node;
+			var lastVisibleChild = node;
 			while (true) {
-				SharpTreeNode tmp = lastVisibleChild.Children.LastOrDefault(c => c.IsVisible);
+				var tmp = lastVisibleChild.Children.LastOrDefault(c => c.IsVisible);
 				if (tmp != null) {
 					lastVisibleChild = tmp;
 				} else {
 					break;
 				}
 			}
-			if (lastVisibleChild != node) {
-				// Make the the expanded children are visible; but don't scroll down
-				// to much (keep node itself visible)
-				base.ScrollIntoView(lastVisibleChild);
-				// For some reason, this only works properly when delaying it...
-				Dispatcher.UIThread.InvokeAsync(new Action(
-					delegate {
-						base.ScrollIntoView(node);
-					}), DispatcherPriority.Loaded);
-			}
+
+			if (lastVisibleChild == node) return;
+			// Make the the expanded children are visible; but don't scroll down
+			// to much (keep node itself visible)
+			base.ScrollIntoView(lastVisibleChild);
+			// For some reason, this only works properly when delaying it...
+			Dispatcher.UIThread.InvokeAsync(new Action(
+				delegate {
+					base.ScrollIntoView(node);
+				}), DispatcherPriority.Loaded);
 		}
 		
 		protected override void OnKeyDown(KeyEventArgs e)
 		{
-			SharpTreeViewItem container = e.Source as SharpTreeViewItem;
+			var container = e.Source as SharpTreeViewItem;
 			switch (e.Key) {
 				case Key.Left:
 					if (container != null && ItemContainerGenerator.IndexFromContainer(e.Source as IControl) != -1) {
@@ -298,8 +286,9 @@ namespace ICSharpCode.TreeView
 					break;
 				case Key.Return:
 				case Key.Space:
-					if (container != null && e.KeyModifiers == KeyModifiers.None && this.SelectedItems.Count == 1 && this.SelectedItem == container.Node) {
-						container.Node.ActivateItem(e);
+					if (container != null && e.KeyModifiers == KeyModifiers.None && this.SelectedItems.Count == 1 && this.SelectedItem == container.Node)
+					{
+						container.Node?.ActivateItem(e);
 					}
 					break;
 				case Key.Add:
@@ -334,12 +323,10 @@ namespace ICSharpCode.TreeView
 
 			foreach (var commandBinding in CommandBindings)
 			{
-				if (commandBinding.Command.Gesture?.Matches(e) == true)
-				{
-					commandBinding.Command.Execute(null, this);
-					e.Handled = true;
-					break;
-				}
+				if (commandBinding.Command.Gesture?.Matches(e) != true) continue;
+				commandBinding.Command.Execute(null, this);
+				e.Handled = true;
+				break;
 			}
 
 			if (!e.Handled)
@@ -361,11 +348,10 @@ namespace ICSharpCode.TreeView
 
 		void ExpandRecursively(SharpTreeNode node)
 		{
-			if (node.CanExpandRecursively) {
-				node.IsExpanded = true;
-				foreach (SharpTreeNode child in node.Children) {
-					ExpandRecursively(child);
-				}
+			if (!node.CanExpandRecursively) return;
+			node.IsExpanded = true;
+			foreach (var child in node.Children) {
+				ExpandRecursively(child);
 			}
 		}
 		
@@ -388,9 +374,9 @@ namespace ICSharpCode.TreeView
 		public void ScrollIntoView(SharpTreeNode node)
 		{
 			if (node == null)
-				throw new ArgumentNullException("node");
+				throw new ArgumentNullException(nameof(node));
 			doNotScrollOnExpanding = true;
-			foreach (SharpTreeNode ancestor in node.Ancestors())
+			foreach (var ancestor in node.Ancestors())
 				ancestor.IsExpanded = true;
 			doNotScrollOnExpanding = false;
 			base.ScrollIntoView(node);
@@ -398,10 +384,8 @@ namespace ICSharpCode.TreeView
 		
 		object OnFocusItem(object item)
 		{
-			Control element = ContainerFromItem(item) as Control;
-			if (element != null) {
-				element.Focus();
-			}
+			var element = ContainerFromItem(item) as Control;
+			element?.Focus();
 			return null;
 		}
 
@@ -429,21 +413,19 @@ namespace ICSharpCode.TreeView
 		protected virtual void OnDragOver(DragEventArgs e)
 		{
 			e.DragEffects = DragDropEffects.None;
-			
-			if (Root != null && !ShowRoot) {
-				e.Handled = true;
-				Root.CanDrop(e, Root.Children.Count);
-			}
+
+			if (Root == null || ShowRoot) return;
+			e.Handled = true;
+			Root.CanDrop(e, Root.Children.Count);
 		}
 
 		protected virtual void OnDrop(DragEventArgs e)
 		{
 			e.DragEffects = DragDropEffects.None;
 
-			if (Root != null && !ShowRoot) {
-				e.Handled = true;
-				Root.InternalDrop(e, Root.Children.Count);
-			}
+			if (Root == null || ShowRoot) return;
+			e.Handled = true;
+			Root.InternalDrop(e, Root.Children.Count);
 		}
 
 		internal void HandleDragEnter(SharpTreeViewItem item, DragEventArgs e)
@@ -456,10 +438,9 @@ namespace ICSharpCode.TreeView
 			HidePreview();
 
 			var target = GetDropTarget(item, e);
-			if (target != null) {
-				e.Handled = true;
-				ShowPreview(target.Item, target.Place);
-			}
+			if (target == null) return;
+			e.Handled = true;
+			ShowPreview(target.Item, target.Place);
 		}
 
 		internal void HandleDrop(SharpTreeViewItem item, DragEventArgs e)
@@ -468,10 +449,9 @@ namespace ICSharpCode.TreeView
 				HidePreview();
 
 				var target = GetDropTarget(item, e);
-				if (target != null) {
-					e.Handled = true;
-					target.Node.InternalDrop(e, target.Index);
-				}
+				if (target == null) return;
+				e.Handled = true;
+				target.Node.InternalDrop(e, target.Index);
 			} catch (Exception ex) {
 				Debug.WriteLine(ex.ToString());
 				throw;
@@ -497,12 +477,7 @@ namespace ICSharpCode.TreeView
 		{
 			var dropTargets = BuildDropTargets(item, e);
 			var y = e.GetPosition(item).Y;
-			foreach (var target in dropTargets) {
-				if (target.Y >= y) {
-					return target;
-				}
-			}
-			return null;
+			return dropTargets.FirstOrDefault(target => target.Y >= y);
 		}
 
 		List<DropTarget> BuildDropTargets(SharpTreeViewItem item, DragEventArgs e)
@@ -532,22 +507,23 @@ namespace ICSharpCode.TreeView
 			var y2 = h / 2;
 			var y3 = h - y1;
 
-			if (result.Count == 2) {
-				if (result[0].Place == DropPlace.Inside &&
-					result[1].Place != DropPlace.Inside) {
+			switch (result.Count)
+			{
+				case 2 when result[0].Place == DropPlace.Inside &&
+				            result[1].Place != DropPlace.Inside:
 					result[0].Y = y3;
-				}
-				else if (result[0].Place != DropPlace.Inside &&
-						 result[1].Place == DropPlace.Inside) {
+					break;
+				case 2 when result[0].Place != DropPlace.Inside &&
+				            result[1].Place == DropPlace.Inside:
 					result[0].Y = y1;
-				}
-				else {
+					break;
+				case 2:
 					result[0].Y = y2;
-				}
-			}
-			else if (result.Count == 3) {
-				result[0].Y = y1;
-				result[1].Y = y3;
+					break;
+				case 3:
+					result[0].Y = y1;
+					result[1].Y = y3;
+					break;
 			}
 			if (result.Count > 0) {
 				result[result.Count - 1].Y = h;
@@ -557,23 +533,18 @@ namespace ICSharpCode.TreeView
 
 		void TryAddDropTarget(List<DropTarget> targets, SharpTreeViewItem item, DropPlace place, DragEventArgs e)
 		{
-			SharpTreeNode node;
-			int index;
+			GetNodeAndIndex(item, place, out var node, out var index);
 
-			GetNodeAndIndex(item, place, out node, out index);
-
-			if (node != null) {
-				e.DragEffects = DragDropEffects.None;
-				if (node.CanDrop(e, index)) {
-					DropTarget target = new DropTarget() {
-						Item = item,
-						Place = place,
-						Node = node,
-						Index = index
-					};
-					targets.Add(target);
-				}
-			}
+			if (node == null) return;
+			e.DragEffects = DragDropEffects.None;
+			if (!node.CanDrop(e, index)) return;
+			var target = new DropTarget() {
+				Item = item,
+				Place = place,
+				Node = node,
+				Index = index
+			};
+			targets.Add(target);
 		}
 
 		void GetNodeAndIndex(SharpTreeViewItem item, DropPlace place, out SharpTreeNode node, out int index)
@@ -581,20 +552,30 @@ namespace ICSharpCode.TreeView
 			node = null;
 			index = 0;
 
-			if (place == DropPlace.Inside) {
-				node = item.Node;
-				index = node.Children.Count;
-			}
-			else if (place == DropPlace.Before) {
-				if (item.Node.Parent != null) {
-					node = item.Node.Parent;
-					index = node.Children.IndexOf(item.Node);
+			switch (place)
+			{
+				case DropPlace.Inside:
+					node = item.Node;
+					index = node.Children.Count;
+					break;
+				case DropPlace.Before:
+				{
+					if (item.Node.Parent != null) {
+						node = item.Node.Parent;
+						index = node.Children.IndexOf(item.Node);
+					}
+
+					break;
 				}
-			}
-			else {
-				if (item.Node.Parent != null) {
-					node = item.Node.Parent;
-					index = node.Children.IndexOf(item.Node) + 1;
+				case DropPlace.After:
+				default:
+				{
+					if (item.Node.Parent != null) {
+						node = item.Node.Parent;
+						index = node.Children.IndexOf(item.Node) + 1;
+					}
+
+					break;
 				}
 			}
 		}
@@ -622,7 +603,7 @@ namespace ICSharpCode.TreeView
 					var adornerLayer = AdornerLayer.GetAdornerLayer(this);
 					insertMarker = new InsertMarker();
 					var adorner = new VisualLayerManager() { Child = insertMarker };
-					adornerLayer.Children.Add(adorner);
+					adornerLayer?.Children.Add(adorner);
 				}
 
 				insertMarker.IsVisible = true;
@@ -641,17 +622,17 @@ namespace ICSharpCode.TreeView
 
 				if (place == DropPlace.Before) {
 					if (index > 0) {
-						secondNodeView = (ItemContainerGenerator.ContainerFromIndex(index - 1) as SharpTreeViewItem).NodeView;
+						secondNodeView = (ItemContainerGenerator.ContainerFromIndex(index - 1) as SharpTreeViewItem)?.NodeView;
 					}
 				}
 				else if (index + 1 < flattener.Count) {
-					secondNodeView = (ItemContainerGenerator.ContainerFromIndex(index + 1) as SharpTreeViewItem).NodeView;
+					secondNodeView = (ItemContainerGenerator.ContainerFromIndex(index + 1) as SharpTreeViewItem)?.NodeView;
 				}
 				
 				var w = p1.X + previewNodeView.Width - p.X;
 
 				if (secondNodeView != null) {
-					var p2 = secondNodeView.TranslatePoint(new Point(), this).Value;
+					var p2 = VisualExtensions.TranslatePoint(secondNodeView, new Point(), this).Value;
 					w = Math.Max(w, p2.X + secondNodeView.Width - p.X);
 				}
 
@@ -661,14 +642,13 @@ namespace ICSharpCode.TreeView
 
 		void HidePreview()
 		{
-			if (previewNodeView != null) {
-				previewNodeView.ClearValue(SharpTreeNodeView.TextBackgroundProperty);
-				//previewNodeView.ClearValue(SharpTreeNodeView.ForegroundProperty);
-				if (insertMarker != null) {
-					insertMarker.IsVisible = false;
-				}
-				previewNodeView = null;
+			if (previewNodeView == null) return;
+			previewNodeView.ClearValue(SharpTreeNodeView.TextBackgroundProperty);
+			//previewNodeView.ClearValue(SharpTreeNodeView.ForegroundProperty);
+			if (insertMarker != null) {
+				insertMarker.IsVisible = false;
 			}
+			previewNodeView = null;
 		}
 		#endregion
 
@@ -716,11 +696,11 @@ namespace ICSharpCode.TreeView
 
 		static void HandleExecuted_Delete(object sender, ExecutedRoutedEventArgs e)
 		{
-			SharpTreeView treeView = (SharpTreeView)sender;
+			var treeView = (SharpTreeView)sender;
 			treeView.updatesLocked = true;
-			int selectedIndex = -1;
+			var selectedIndex = -1;
 			try {
-				foreach (SharpTreeNode node in treeView.GetTopLevelSelection().ToArray()) {
+				foreach (var node in treeView.GetTopLevelSelection().ToArray()) {
 					if (selectedIndex == -1)
 						selectedIndex = treeView.flattener.IndexOf(node);
 					node.Delete();
@@ -733,7 +713,7 @@ namespace ICSharpCode.TreeView
 
 		static void HandleCanExecute_Delete(object sender, CanExecuteRoutedEventArgs e)
 		{
-			SharpTreeView treeView = (SharpTreeView)sender;
+			var treeView = (SharpTreeView)sender;
 			e.CanExecute = treeView.GetTopLevelSelection().All(node => node.CanDelete());
 		}
 		

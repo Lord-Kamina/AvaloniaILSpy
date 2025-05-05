@@ -64,11 +64,11 @@ namespace ICSharpCode.ILSpy
 		{
 			AvaloniaXamlLoader.Load(this);
 			var cmdArgs = Environment.GetCommandLineArgs().Skip(1);
-			App.CommandLineArguments = new CommandLineArguments(cmdArgs);
+			CommandLineArguments = new CommandLineArguments(cmdArgs);
 			if ((App.CommandLineArguments.SingleInstance ?? true) && !MiscSettingsPanel.CurrentMiscSettings.AllowMultipleInstances) {
 				cmdArgs = cmdArgs.Select(FullyQualifyPath);
-				string message = string.Join(Environment.NewLine, cmdArgs);
-				if (!App.CommandLineArguments.NoActivate) {
+				var message = string.Join(Environment.NewLine, cmdArgs);
+				if (!CommandLineArguments.NoActivate) {
 					//TODO: singleton mode
 					Debug.WriteLine("NoActivate argument not supported");
 					//Environment.Exit(0);
@@ -200,13 +200,12 @@ namespace ICSharpCode.ILSpy
 		{
 			if (e.Uri.Scheme == "resource")
 			{
-				AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
-				using (Stream s = typeof(App).Assembly.GetManifestResourceStream(typeof(App), e.Uri.AbsolutePath))
+				var output = new AvaloniaEditTextOutput();
+				using (var s = typeof(App).Assembly.GetManifestResourceStream(typeof(App), e.Uri.AbsolutePath))
 				{
-					using (StreamReader r = new StreamReader(s))
+					using (var r = new StreamReader(s))
 					{
-						string line;
-						while ((line = r.ReadLine()) != null)
+						while (r.ReadLine() is { } line)
 						{
 							output.Write(line);
 							output.WriteLine();

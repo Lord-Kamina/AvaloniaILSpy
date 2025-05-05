@@ -16,7 +16,7 @@ namespace ICSharpCode.ILSpy.Controls
 	{
         static readonly Func<Window, object> _dialogResultField;
 
-        public object DialogResult { get { return _dialogResultField(this); } }
+        public object DialogResult => _dialogResultField(this);
 
         static DialogWindow()
         {
@@ -29,11 +29,9 @@ namespace ICSharpCode.ILSpy.Controls
         protected override void OnKeyDown(KeyEventArgs e)
         {
             base.OnKeyDown(e);
-            if (e.Key == Key.Escape && e.KeyModifiers == KeyModifiers.None)
-            {
-                Close();
-                e.Handled = true;
-            }
+            if (e.Key != Key.Escape || e.KeyModifiers != KeyModifiers.None) return;
+            Close();
+            e.Handled = true;
         }
 
         Type IStyleable.StyleKey { get; } = typeof(Window);

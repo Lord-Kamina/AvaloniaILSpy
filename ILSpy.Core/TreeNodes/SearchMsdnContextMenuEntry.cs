@@ -49,23 +49,16 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
             foreach (var node in context.SelectedTreeNodes)
             {
-                if (node is TypeTreeNode typeNode && !typeNode.IsPublicAPI)
-                    return false;
-
-                if (node is EventTreeNode eventNode && (!eventNode.IsPublicAPI || !IsAccessible(eventNode.EventDefinition)))
-                    return false;
-
-                if (node is FieldTreeNode fieldNode && (!fieldNode.IsPublicAPI || !IsAccessible(fieldNode.FieldDefinition)))
-                    return false;
-
-                if (node is PropertyTreeNode propertyNode && (!propertyNode.IsPublicAPI || !IsAccessible(propertyNode.PropertyDefinition)))
-                    return false;
-
-                if (node is MethodTreeNode methodNode && (!methodNode.IsPublicAPI || !IsAccessible(methodNode.MethodDefinition)))
-                    return false;
-
-                if (node is NamespaceTreeNode namespaceNode && string.IsNullOrEmpty(namespaceNode.Name))
-                    return false;
+                switch (node)
+                {
+                    case TypeTreeNode { IsPublicAPI: false }:
+                    case EventTreeNode eventNode when (!eventNode.IsPublicAPI || !IsAccessible(eventNode.EventDefinition)):
+                    case FieldTreeNode fieldNode when (!fieldNode.IsPublicAPI || !IsAccessible(fieldNode.FieldDefinition)):
+                    case PropertyTreeNode propertyNode when (!propertyNode.IsPublicAPI || !IsAccessible(propertyNode.PropertyDefinition)):
+                    case MethodTreeNode methodNode when (!methodNode.IsPublicAPI || !IsAccessible(methodNode.MethodDefinition)):
+                    case NamespaceTreeNode namespaceNode when string.IsNullOrEmpty(namespaceNode.Name):
+                        return false;
+                }
             }
 
             return true;
@@ -81,6 +74,10 @@ namespace ICSharpCode.ILSpy.TreeNodes
                 case Accessibility.Protected:
                 case Accessibility.ProtectedOrInternal:
                     return true;
+                case Accessibility.None:
+                case Accessibility.Private:
+                case Accessibility.ProtectedAndInternal:
+                case Accessibility.Internal:
                 default:
                     return false;
             }
@@ -88,12 +85,11 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
         public void Execute(TextViewContext context)
         {
-            if (context.SelectedTreeNodes != null)
+            if (context.SelectedTreeNodes == null) return;
+            foreach (var sharpTreeNode in context.SelectedTreeNodes)
             {
-                foreach (ILSpyTreeNode node in context.SelectedTreeNodes)
-                {
-                    SearchMsdn(node);
-                }
+                var node = (ILSpyTreeNode)sharpTreeNode;
+                SearchMsdn(node);
             }
         }
 
@@ -101,21 +97,20 @@ namespace ICSharpCode.ILSpy.TreeNodes
         {
             var address = string.Empty;
 
-            var namespaceNode = node as NamespaceTreeNode;
-            if (namespaceNode != null)
-                address = string.Format(msdnAddress, namespaceNode.Name, Thread.CurrentThread.CurrentUICulture.Name);
-
-            if (node is IMemberTreeNode memberNode)
+            switch (node)
             {
-                var member = memberNode.Member;
-                var memberName = string.Empty;
+                case NamespaceTreeNode namespaceNode:
+                    address = string.Format(msdnAddress, namespaceNode.Name, Thread.CurrentThread.CurrentUICulture.Name);
+                    break;
+                case IMemberTreeNode memberNode:
+                {
+                    var member = memberNode.Member;
 
-                if (member.DeclaringType == null)
-                    memberName = member.FullName;
-                else
-                    memberName = string.Format("{0}.{1}", member.DeclaringType.FullName, member.Name);
+                    var memberName = member.DeclaringType == null ? member.FullName : $"{member.DeclaringType.FullName}.{member.Name}";
 
-                address = string.Format(msdnAddress, memberName, Thread.CurrentThread.CurrentUICulture.Name);
+                    address = string.Format(msdnAddress, memberName, Thread.CurrentThread.CurrentUICulture.Name);
+                    break;
+                }
             }
 
             address = address.ToLower();

@@ -22,46 +22,45 @@ namespace ICSharpCode.TreeView
 		
 		void UpdateIsVisible(bool parentIsVisible, bool updateFlattener)
 		{
-			bool newIsVisible = parentIsVisible && !isHidden;
-			if (isVisible != newIsVisible) {
-				isVisible = newIsVisible;
+			var newIsVisible = parentIsVisible && !isHidden;
+			if (isVisible == newIsVisible) return;
+			isVisible = newIsVisible;
 				
-				// invalidate the augmented data
-				SharpTreeNode node = this;
-				while (node != null && node.totalListLength >= 0) {
-					node.totalListLength = -1;
-					node = node.listParent;
-				}
-				// Remember the removed nodes:
-				List<SharpTreeNode> removedNodes = null;
-				if (updateFlattener && !newIsVisible) {
-					removedNodes = VisibleDescendantsAndSelf().ToList();
-				}
-				// also update the model children:
-				UpdateChildIsVisible(false);
+			// invalidate the augmented data
+			var node = this;
+			while (node != null && node.totalListLength >= 0) {
+				node.totalListLength = -1;
+				node = node.listParent;
+			}
+			// Remember the removed nodes:
+			List<SharpTreeNode> removedNodes = null;
+			if (updateFlattener && !newIsVisible) {
+				removedNodes = VisibleDescendantsAndSelf().ToList();
+			}
+			// also update the model children:
+			UpdateChildIsVisible(false);
 				
-				// Validate our invariants:
-				if (updateFlattener)
-					CheckRootInvariants();
+			// Validate our invariants:
+			if (updateFlattener)
+				CheckRootInvariants();
 				
-				// Tell the flattener about the removed nodes:
-				if (removedNodes != null) {
-					var flattener = GetListRoot().treeFlattener;
-					if (flattener != null) {
-						flattener.NodesRemoved(GetVisibleIndexForNode(this), removedNodes);
-						foreach (var n in removedNodes)
-							n.OnIsVisibleChanged();
-					}
+			// Tell the flattener about the removed nodes:
+			if (removedNodes != null) {
+				var flattener = GetListRoot().treeFlattener;
+				if (flattener != null) {
+					flattener.NodesRemoved(GetVisibleIndexForNode(this), removedNodes);
+					foreach (var n in removedNodes)
+						n.OnIsVisibleChanged();
 				}
-				// Tell the flattener about the new nodes:
-				if (updateFlattener && newIsVisible) {
-					var flattener = GetListRoot().treeFlattener;
-					if (flattener != null) {
-						flattener.NodesInserted(GetVisibleIndexForNode(this), VisibleDescendantsAndSelf());
-						foreach (var n in VisibleDescendantsAndSelf())
-							n.OnIsVisibleChanged();
-					}
-				}
+			}
+			// Tell the flattener about the new nodes:
+			if (!updateFlattener || !newIsVisible) return;
+			{
+				var flattener = GetListRoot().treeFlattener;
+				if (flattener == null) return;
+				flattener.NodesInserted(GetVisibleIndexForNode(this), VisibleDescendantsAndSelf());
+				foreach (var n in VisibleDescendantsAndSelf())
+					n.OnIsVisibleChanged();
 			}
 		}
 		

@@ -44,37 +44,30 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			Debug.Assert(analyzedSymbol is IMethod);
 			var scope = context.GetScopeOf((IEntity)analyzedSymbol);
 			foreach (var type in scope.GetTypesInScope(context.CancellationToken)) {
-				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule.MetadataFile, type.MetadataToken);
+				var mappingInfo = context.Language.GetCodeMappingInfo((PEFile)type.ParentModule?.MetadataFile, type.MetadataToken);
 				var methods = type.GetMembers(m => m is IMethod, Options).OfType<IMethod>();
 				foreach (var method in methods) {
 					if (IsUsedInMethod((IMethod)analyzedSymbol, method, mappingInfo, context))
 						yield return method;
 				}
 
-				foreach (var property in type.Properties) {
-					if (property.CanGet && IsUsedInMethod((IMethod)analyzedSymbol, property.Getter, mappingInfo, context)) {
-						yield return property;
-						continue;
-					}
-					if (property.CanSet && IsUsedInMethod((IMethod)analyzedSymbol, property.Setter, mappingInfo, context)) {
-						yield return property;
-						continue;
-					}
+				foreach (var property in type.Properties)
+				{
+					if ((!property.CanGet ||
+					     !IsUsedInMethod((IMethod)analyzedSymbol, property.Getter, mappingInfo, context)) &&
+					    (!property.CanSet || !IsUsedInMethod((IMethod)analyzedSymbol, property.Setter, mappingInfo,
+						    context))) continue;
+					yield return property;
 				}
 
-				foreach (var @event in type.Events) {
-					if (@event.CanAdd && IsUsedInMethod((IMethod)analyzedSymbol, @event.AddAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
-					if (@event.CanRemove && IsUsedInMethod((IMethod)analyzedSymbol, @event.RemoveAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
-					if (@event.CanInvoke && IsUsedInMethod((IMethod)analyzedSymbol, @event.InvokeAccessor, mappingInfo, context)) {
-						yield return @event;
-						continue;
-					}
+				foreach (var @event in type.Events)
+				{
+					if ((!@event.CanAdd ||
+					     !IsUsedInMethod((IMethod)analyzedSymbol, @event.AddAccessor, mappingInfo, context)) &&
+					    (!@event.CanRemove || !IsUsedInMethod((IMethod)analyzedSymbol, @event.RemoveAccessor,
+						    mappingInfo, context)) && (!@event.CanInvoke || !IsUsedInMethod((IMethod)analyzedSymbol,
+						    @event.InvokeAccessor, mappingInfo, context))) continue;
+					yield return @event;
 				}
 			}
 		}
@@ -100,7 +93,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 				try {
 					opCode = blob.DecodeOpCode();
                     if (!IsSupportedOpCode(opCode)) {
-						ILParser.SkipOperand(ref blob, opCode);
+						blob.SkipOperand(opCode);
 						continue;
 					}
 				} catch (BadImageFormatException) {
@@ -111,7 +104,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 				IMember m;
 				try {
-					m = (mainModule.ResolveEntity(member, genericContext) as IMember)?.MemberDefinition;
+					m = (mainModule?.ResolveEntity(member, genericContext) as IMember)?.MemberDefinition;
 				} catch (BadImageFormatException) {
 					continue;
 				}
@@ -134,24 +127,22 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
         static bool IsSupportedOpCode(ILOpCode opCode)
         {
-            switch (opCode)
-            {
-                case ILOpCode.Call:
-                case ILOpCode.Callvirt:
-                case ILOpCode.Ldtoken:
-                case ILOpCode.Ldftn:
-                case ILOpCode.Ldvirtftn:
-                case ILOpCode.Newobj:
-                    return true;
-                default:
-                    return false;
-            }
+	        return opCode switch
+	        {
+		        ILOpCode.Call => true,
+		        ILOpCode.Callvirt => true,
+		        ILOpCode.Ldtoken => true,
+		        ILOpCode.Ldftn => true,
+		        ILOpCode.Ldvirtftn => true,
+		        ILOpCode.Newobj => true,
+		        _ => false
+	        };
         }
 
         static bool IsSameMember(IMember analyzedMethod, IMember m)
 		{
 			return m.MetadataToken == analyzedMethod.MetadataToken
-				&& m.ParentModule.MetadataFile == analyzedMethod.ParentModule.MetadataFile;
+				&& m.ParentModule?.MetadataFile == analyzedMethod.ParentModule?.MetadataFile;
 		}
 	}
 }

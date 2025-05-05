@@ -50,13 +50,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 			if (field.DeclaringType.Kind == TypeKind.Enum && field.ReturnType.Kind == TypeKind.Enum)
 				return Images.GetIcon(MemberIcon.EnumValue, MethodTreeNode.GetOverlayIcon(field.Accessibility), false);
 
-			if (field.IsConst)
-				return Images.GetIcon(MemberIcon.Literal, MethodTreeNode.GetOverlayIcon(field.Accessibility), false);
-
-			if (field.IsReadOnly)
-				return Images.GetIcon(MemberIcon.FieldReadOnly, MethodTreeNode.GetOverlayIcon(field.Accessibility), field.IsStatic);
-
-			return Images.GetIcon(MemberIcon.Field, MethodTreeNode.GetOverlayIcon(field.Accessibility), field.IsStatic);
+			return field.IsConst ? Images.GetIcon(MemberIcon.Literal, MethodTreeNode.GetOverlayIcon(field.Accessibility), false) : Images.GetIcon(field.IsReadOnly ? MemberIcon.FieldReadOnly : MemberIcon.Field, MethodTreeNode.GetOverlayIcon(field.Accessibility), field.IsStatic);
 		}
 
 		public override FilterResult Filter(FilterSettings settings)
@@ -65,9 +59,8 @@ namespace ICSharpCode.ILSpy.TreeNodes
                 return FilterResult.Hidden;
             if (settings.SearchTermMatches(FieldDefinition.Name) && (settings.ShowApiLevel == ApiVisibility.All || settings.Language.ShowMember(FieldDefinition)))
                 return FilterResult.Match;
-			else
-				return FilterResult.Hidden;
-		}
+            return FilterResult.Hidden;
+        }
 
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
 		{
@@ -75,15 +68,15 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		}
 		
 		public override bool IsPublicAPI {
-			get {
-				switch (FieldDefinition.Accessibility) {
-					case Accessibility.Public:
-					case Accessibility.Protected:
-					case Accessibility.ProtectedOrInternal:
-						return true;
-					default:
-						return false;
-				}
+			get
+			{
+				return FieldDefinition.Accessibility switch
+				{
+					Accessibility.Public => true,
+					Accessibility.Protected => true,
+					Accessibility.ProtectedOrInternal => true,
+					_ => false
+				};
 			}
 		}
 

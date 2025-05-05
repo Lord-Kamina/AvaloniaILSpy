@@ -47,9 +47,8 @@ namespace ICSharpCode.ILSpy
 
 		static LoadedAssembly GetLoadedAssembly(PEFile file)
 		{
-			if (file == null)
-				throw new ArgumentNullException(nameof(file));
-			LoadedAssembly loadedAssembly;
+            ArgumentNullException.ThrowIfNull(file);
+            LoadedAssembly loadedAssembly;
 			lock (LoadedAssembly.loadedAssemblies) {
 				if (!LoadedAssembly.loadedAssemblies.TryGetValue(file, out loadedAssembly))
 					throw new ArgumentException("The specified file is not associated with a LoadedAssembly!");

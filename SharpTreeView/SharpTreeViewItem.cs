@@ -21,10 +21,7 @@ namespace ICSharpCode.TreeView
 			DragDrop.DropEvent.AddClassHandler<SharpTreeViewItem>((x, e) => x.OnDrop(e));
 		}
 
-		public SharpTreeNode Node
-		{
-			get { return DataContext as SharpTreeNode; }
-		}
+		public SharpTreeNode Node => DataContext as SharpTreeNode;
 
 		public SharpTreeNodeView NodeView { get; internal set; }
 		public SharpTreeView ParentTreeView { get; internal set; }
@@ -57,27 +54,24 @@ namespace ICSharpCode.TreeView
 				base.OnPointerPressed(e);
 			}
 
-			if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) {
-				startPoint = e.GetPosition(this);
-				e.Pointer.Capture(this);
+			if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+			startPoint = e.GetPosition(this);
+			e.Pointer.Capture(this);
 
-				if (e.ClickCount == 2) {
-					wasDoubleClick = true;
-				}
+			if (e.ClickCount == 2) {
+				wasDoubleClick = true;
 			}
 		}
 
 		protected override void OnPointerMoved(PointerEventArgs e)
 		{
-			if (e.Pointer.Captured == this) {
+			if (Equals(e.Pointer.Captured, this)) {
 				var currentPoint = e.GetPosition(this);
-				if (Math.Abs(currentPoint.X - startPoint.X) >= SystemParameters.MinimumHorizontalDragDistance ||
-					Math.Abs(currentPoint.Y - startPoint.Y) >= SystemParameters.MinimumVerticalDragDistance) {
-
-					var selection = ParentTreeView.GetTopLevelSelection().ToArray();
-					if (Node.CanDrag(selection)) {
-						Node.StartDrag(e, this, selection);
-					}
+				if (!(Math.Abs(currentPoint.X - startPoint.X) >= SystemParameters.MinimumHorizontalDragDistance) &&
+				    !(Math.Abs(currentPoint.Y - startPoint.Y) >= SystemParameters.MinimumVerticalDragDistance)) return;
+				var selection = ParentTreeView.GetTopLevelSelection().ToArray();
+				if (Node.CanDrag(selection)) {
+					Node.StartDrag(e, this, selection);
 				}
 			} else {
 				base.OnPointerMoved(e);

@@ -53,19 +53,15 @@ namespace ICSharpCode.ILSpy
 		/// <paramref name="assemblies"/> is null.</exception>
 		public static void CreateSolution(DecompilerTextView textView, string solutionFilePath, Language language, IEnumerable<LoadedAssembly> assemblies)
 		{
-			if (textView == null) {
-				throw new ArgumentNullException(nameof(textView));
-			}
+            ArgumentNullException.ThrowIfNull(textView);
 
-			if (string.IsNullOrWhiteSpace(solutionFilePath)) {
+            if (string.IsNullOrWhiteSpace(solutionFilePath)) {
 				throw new ArgumentException("The solution file path cannot be null or empty.", nameof(solutionFilePath));
 			}
 
-			if (assemblies == null) {
-				throw new ArgumentNullException(nameof(assemblies));
-			}
+            ArgumentNullException.ThrowIfNull(assemblies);
 
-			var writer = new SolutionWriter(solutionFilePath);
+            var writer = new SolutionWriter(solutionFilePath);
 
 			textView
 				.RunWithCancellation(ct => writer.CreateSolution(assemblies, language, ct))
@@ -91,19 +87,20 @@ namespace ICSharpCode.ILSpy
 			var result = new AvaloniaEditTextOutput();
 
 			var duplicates = new HashSet<string>();
-			if (assemblies.Any(asm => !duplicates.Add(asm.ShortName))) {
+			var loadedAssemblies = assemblies as LoadedAssembly[] ?? assemblies.ToArray();
+			if (loadedAssemblies.Any(asm => !duplicates.Add(asm.ShortName))) {
 				result.WriteLine("Duplicate assembly names selected, cannot generate a solution.");
 				return result;
 			}
 
-			Stopwatch stopwatch = Stopwatch.StartNew();
+			var stopwatch = Stopwatch.StartNew();
 
 			try {
-				await Task.Run(() => Parallel.ForEach(assemblies, n => WriteProject(n, language, solutionDirectory, ct)))
+				await Task.Run(() => Parallel.ForEach(loadedAssemblies, n => WriteProject(n, language, solutionDirectory, ct)), ct)
 					.ConfigureAwait(false);
 
-				await Task.Run(() => SolutionCreator.WriteSolutionFile(solutionFilePath, projects))
-					.ConfigureAwait(false);
+				await Task.Run(() => SolutionCreator.WriteSolutionFile(solutionFilePath, projects), ct)
+                    .ConfigureAwait(false);
 			} catch (AggregateException ae) {
 				if (ae.Flatten().InnerExceptions.All(e => e is OperationCanceledException)) {
 					result.WriteLine();
@@ -125,15 +122,16 @@ namespace ICSharpCode.ILSpy
 				result.WriteLine(item);
 			}
 
-			if (statusOutput.Count == 0) {
+			if (!statusOutput.IsEmpty) return result;
+			{
 				result.WriteLine("Successfully decompiled the following assemblies into Visual Studio projects:");
-				foreach (var item in assemblies.Select(n => n.Text.ToString())) {
+				foreach (var item in loadedAssemblies.Select(n => n.Text.ToString())) {
 					result.WriteLine(item);
 				}
 
 				result.WriteLine();
 
-				if (assemblies.Count() == projects.Count) {
+				if (loadedAssemblies.Length == projects.Count) {
 					result.WriteLine("Created the Visual Studio Solution file.");
 				}
 
@@ -149,7 +147,7 @@ namespace ICSharpCode.ILSpy
 		void WriteProject(LoadedAssembly loadedAssembly, Language language, string targetDirectory, CancellationToken ct)
 		{
 			targetDirectory = Path.Combine(targetDirectory, loadedAssembly.ShortName);
-			string projectFileName = Path.Combine(targetDirectory, loadedAssembly.ShortName + language.ProjectFileExtension);
+			var projectFileName = Path.Combine(targetDirectory, loadedAssembly.ShortName + language.ProjectFileExtension);
 
 			if (!Directory.Exists(targetDirectory)) {
 				try {
@@ -160,19 +158,19 @@ namespace ICSharpCode.ILSpy
 				}
 			}
 
-			try {
-				using (var projectFileWriter = new StreamWriter(projectFileName)) {
-					var projectFileOutput = new PlainTextOutput(projectFileWriter);
-					var options = new DecompilationOptions() {
-						FullDecompilation = true,
-						CancellationToken = ct,
-						SaveAsProjectDirectory = targetDirectory
-					};
+			try
+			{
+				using var projectFileWriter = new StreamWriter(projectFileName);
+				var projectFileOutput = new PlainTextOutput(projectFileWriter);
+				var options = new DecompilationOptions() {
+					FullDecompilation = true,
+					CancellationToken = ct,
+					SaveAsProjectDirectory = targetDirectory
+				};
 
-					var projectInfo = language.DecompileAssembly(loadedAssembly, projectFileOutput, options);
-					if (projectInfo != null) {
-						projects.Add (new ProjectItem (projectFileName, projectInfo.PlatformName, projectInfo.Guid, projectInfo.TypeGuid));
-					}
+				var projectInfo = language.DecompileAssembly(loadedAssembly, projectFileOutput, options);
+				if (projectInfo != null) {
+					projects.Add (new ProjectItem (projectFileName, projectInfo.PlatformName, projectInfo.Guid, projectInfo.TypeGuid));
 				}
 			} catch (Exception e) when (!(e is OperationCanceledException)) {
 				statusOutput.Add($"Failed to decompile the assembly '{loadedAssembly.FileName}':{Environment.NewLine}{e}");

@@ -25,9 +25,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 	{
 		public bool IsVisible(TextViewContext context)
 		{
-			if (context.TreeView is AnalyzerTreeView && context.SelectedTreeNodes != null && context.SelectedTreeNodes.All(n => n.Parent.IsRoot))
-				return true;
-			return false;
+			return context.TreeView is AnalyzerTreeView && context.SelectedTreeNodes != null && context.SelectedTreeNodes.All(n => n.Parent.IsRoot);
 		}
 
 		public bool IsEnabled(TextViewContext context)
@@ -37,10 +35,9 @@ namespace ICSharpCode.ILSpy.Analyzers
 
 		public void Execute(TextViewContext context)
 		{
-			if (context.SelectedTreeNodes != null) {
-				foreach (var node in context.SelectedTreeNodes) {
-					node.Parent.Children.Remove(node);
-				}
+			if (context.SelectedTreeNodes == null) return;
+			foreach (var node in context.SelectedTreeNodes) {
+				node.Parent.Children.Remove(node);
 			}
 		}
 	}

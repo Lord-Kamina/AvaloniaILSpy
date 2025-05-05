@@ -30,7 +30,7 @@ using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Input;
 using System.Xml.Linq;
-
+using Avalonia.Controls.Primitives;
 using AvaloniaEdit.Rendering;
 using ICSharpCode.Decompiler;
 using ICSharpCode.ILSpy.TextView;
@@ -58,11 +58,13 @@ namespace ICSharpCode.ILSpy
 		
 		public static void Display(DecompilerTextView textView)
 		{
-			AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+			var output = new AvaloniaEditTextOutput();
 			output.WriteLine(Resources.ILSpyVersion + RevisionClass.FullVersion);
+			var stackPanel = new StackPanel();
+			CheckBox checkBox = new CheckBox();
+			UpdateSettings settings = new UpdateSettings(ILSpySettings.Load());
 			output.AddUIElement(
 				delegate {
-					StackPanel stackPanel = new StackPanel();
 					stackPanel.HorizontalAlignment = HorizontalAlignment.Center;
 					stackPanel.Orientation = Orientation.Horizontal;
 					if (latestAvailableVersion == null) {
@@ -71,11 +73,10 @@ namespace ICSharpCode.ILSpy
 						// we already retrieved the latest version sometime earlier
 						ShowAvailableVersion(latestAvailableVersion, stackPanel);
 					}
-					CheckBox checkBox = new CheckBox();
+
 					checkBox.Margin = new Thickness(4);
 					checkBox.Content = Resources.AutomaticallyCheckUpdatesEveryWeek;
-					UpdateSettings settings = new UpdateSettings(ILSpySettings.Load());
-					checkBox.Bind(CheckBox.IsCheckedProperty, new Binding("AutomaticUpdateCheckEnabled") { Source = settings });
+					checkBox.Bind(ToggleButton.IsCheckedProperty, new Binding("AutomaticUpdateCheckEnabled") { Source = settings });
 					return new StackPanel {
 						Margin = new Thickness(0, 4, 0, 0),
 						Cursor = Cursor.Default,
@@ -87,10 +88,9 @@ namespace ICSharpCode.ILSpy
 				plugin.Write(output);
 			output.WriteLine();
 			var asm = typeof(AboutPage).Assembly;
-			using (Stream s = typeof(AboutPage).Assembly.GetManifestResourceStream(typeof(AboutPage), "README.txt")) {
-				using (StreamReader r = new StreamReader(s)) {
-					string line;
-					while ((line = r.ReadLine()) != null) {
+			using (var s = typeof(AboutPage).Assembly.GetManifestResourceStream(typeof(AboutPage), "README.txt")) {
+				using (var r = new StreamReader(s)) {
+					while (r.ReadLine() is { } line) {
 						output.WriteLine(line);
 					}
 				}
@@ -120,9 +120,11 @@ namespace ICSharpCode.ILSpy
 		
 		static void AddUpdateCheckButton(StackPanel stackPanel, DecompilerTextView textView)
 		{
-			Button button = new Button();
-			button.Content = Resources.CheckUpdates;
-			button.Cursor = Cursor.Default;
+			var button = new Button
+			{
+				Content = Resources.CheckUpdates,
+				Cursor = Cursor.Default
+			};
 			stackPanel.Children.Add(button);
 			
 			button.Click += delegate {
@@ -134,7 +136,7 @@ namespace ICSharpCode.ILSpy
 							stackPanel.Children.Clear();
 							ShowAvailableVersion(task.Result, stackPanel);
 						} catch (Exception ex) {
-							AvaloniaEditTextOutput exceptionOutput = new AvaloniaEditTextOutput();
+							var exceptionOutput = new AvaloniaEditTextOutput();
 							exceptionOutput.WriteLine(ex.ToString());
 							textView.ShowText(exceptionOutput);
 						}
@@ -165,15 +167,16 @@ namespace ICSharpCode.ILSpy
 						Margin = new Thickness(0,0,8,0),
 						VerticalAlignment = VerticalAlignment.Bottom
 					});
-				if (availableVersion.DownloadUrl != null) {
-					Button button = new Button();
-					button.Content = Resources.Download;
-					button.Cursor = Cursor.Default;
-					button.Click += delegate {
-						MainWindow.OpenLink(availableVersion.DownloadUrl);
-					};
-					stackPanel.Children.Add(button);
-				}
+				if (availableVersion.DownloadUrl == null) return;
+				var button = new Button
+				{
+					Content = Resources.Download,
+					Cursor = Cursor.Default
+				};
+				button.Click += delegate {
+					MainWindow.OpenLink(availableVersion.DownloadUrl);
+				};
+				stackPanel.Children.Add(button);
 			} else {
 				stackPanel.Children.Add(new TextBlock { Text = Resources.UsingNightlyBuildNewerThanLatestRelease });
 			}
@@ -184,8 +187,8 @@ namespace ICSharpCode.ILSpy
 			var tcs = new TaskCompletionSource<AvailableVersionInfo>();
 			Task.Run(() =>
 			{
-				WebClient wc = new WebClient();
-				IWebProxy systemWebProxy = WebRequest.GetSystemWebProxy();
+				var wc = new WebClient();
+				var systemWebProxy = WebRequest.GetSystemWebProxy();
 				systemWebProxy.Credentials = CredentialCache.DefaultCredentials;
 				wc.Proxy = systemWebProxy;
 				wc.DownloadDataCompleted += delegate (object sender, DownloadDataCompletedEventArgs e)
@@ -198,12 +201,12 @@ namespace ICSharpCode.ILSpy
 					{
 						try
 						{
-							XDocument doc = XDocument.Load(new MemoryStream(e.Result));
+							var doc = XDocument.Load(new MemoryStream(e.Result));
 							var bands = doc.Root.Elements("band");
 							var currentBand = bands.FirstOrDefault(b => (string)b.Attribute("id") == band) ?? bands.First();
-							Version version = new Version((string)currentBand.Element("latestVersion"));
-							string url = (string)currentBand.Element("downloadUrl");
-							if (!(url.StartsWith("http://", StringComparison.Ordinal) || url.StartsWith("https://", StringComparison.Ordinal)))
+							var version = new Version((string)currentBand.Element("latestVersion"));
+							var url = (string)currentBand.Element("downloadUrl");
+							if (url != null && !(url.StartsWith("http://", StringComparison.Ordinal) || url.StartsWith("https://", StringComparison.Ordinal)))
 								url = null; // don't accept non-urls
 							latestAvailableVersion = new AvailableVersionInfo { Version = version, DownloadUrl = url };
 							tcs.SetResult(latestAvailableVersion);
@@ -242,32 +245,32 @@ namespace ICSharpCode.ILSpy
 			bool automaticUpdateCheckEnabled;
 			
 			public bool AutomaticUpdateCheckEnabled {
-				get { return automaticUpdateCheckEnabled; }
-				set {
-					if (automaticUpdateCheckEnabled != value) {
-						automaticUpdateCheckEnabled = value;
-						Save();
-						OnPropertyChanged(nameof(AutomaticUpdateCheckEnabled));
-					}
+				get => automaticUpdateCheckEnabled;
+				set
+				{
+					if (automaticUpdateCheckEnabled == value) return;
+					automaticUpdateCheckEnabled = value;
+					Save();
+					OnPropertyChanged(nameof(AutomaticUpdateCheckEnabled));
 				}
 			}
 			
 			DateTime? lastSuccessfulUpdateCheck;
 			
 			public DateTime? LastSuccessfulUpdateCheck {
-				get { return lastSuccessfulUpdateCheck; }
-				set {
-					if (lastSuccessfulUpdateCheck != value) {
-						lastSuccessfulUpdateCheck = value;
-						Save();
-						OnPropertyChanged(nameof(LastSuccessfulUpdateCheck));
-					}
+				get => lastSuccessfulUpdateCheck;
+				set
+				{
+					if (lastSuccessfulUpdateCheck == value) return;
+					lastSuccessfulUpdateCheck = value;
+					Save();
+					OnPropertyChanged(nameof(LastSuccessfulUpdateCheck));
 				}
 			}
 			
 			public void Save()
 			{
-				XElement updateSettings = new XElement("UpdateSettings");
+				var updateSettings = new XElement("UpdateSettings");
 				updateSettings.Add(new XElement("AutomaticUpdateCheckEnabled", automaticUpdateCheckEnabled));
 				if (lastSuccessfulUpdateCheck != null)
 					updateSettings.Add(new XElement("LastSuccessfulUpdateCheck", lastSuccessfulUpdateCheck));
@@ -278,9 +281,7 @@ namespace ICSharpCode.ILSpy
 			
 			void OnPropertyChanged(string propertyName)
 			{
-				if (PropertyChanged != null) {
-					PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
-				}
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 			}
 		}
 		
@@ -292,7 +293,7 @@ namespace ICSharpCode.ILSpy
 		public static Task<string> CheckForUpdatesIfEnabledAsync(ILSpySettings spySettings)
 		{
 			var tcs = new TaskCompletionSource<string>();
-			UpdateSettings s = new UpdateSettings(spySettings);
+			var s = new UpdateSettings(spySettings);
 			if (s.AutomaticUpdateCheckEnabled) {
 				// perform update check if we never did one before;
 				// or if the last check wasn't in the past 7 days
@@ -313,7 +314,7 @@ namespace ICSharpCode.ILSpy
 		public static Task<string> CheckForUpdatesAsync(ILSpySettings spySettings)
 		{
 			var tcs = new TaskCompletionSource<string>();
-			UpdateSettings s = new UpdateSettings(spySettings);
+			var s = new UpdateSettings(spySettings);
 			CheckForUpdateInternal(tcs, s);
 			return tcs.Task;
 		}
@@ -324,11 +325,8 @@ namespace ICSharpCode.ILSpy
 				delegate (Task<AvailableVersionInfo> task) {
 					try {
 						s.LastSuccessfulUpdateCheck = DateTime.UtcNow;
-						AvailableVersionInfo v = task.Result;
-						if (v.Version > currentVersion)
-							tcs.SetResult(v.DownloadUrl);
-						else
-							tcs.SetResult(null);
+						var v = task.Result;
+						tcs.SetResult(v.Version > currentVersion ? v.DownloadUrl : null);
 					} catch (AggregateException) {
 						// ignore errors getting the version info
 						tcs.SetResult(null);

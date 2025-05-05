@@ -71,12 +71,11 @@ namespace ICSharpCode.ILSpy.TreeNodes
 				foreach (var h in metadata.TypeDefinitions) {
 					cancellationToken.ThrowIfCancellationRequested();
 					var td = metadata.GetTypeDefinition(h);
-					foreach (var iface in td.GetInterfaceImplementations()) {
-						var ifaceImpl = metadata.GetInterfaceImplementation(iface);
-						if (IsSameType(metadata, ifaceImpl.Interface, definitionMetadata, metadataToken))
-							yield return new DerivedTypesEntryNode(list, assembly.GetDefinition(h));
+					foreach (var ifaceImpl in td.GetInterfaceImplementations().Select(iface => metadata.GetInterfaceImplementation(iface)).Where(ifaceImpl => IsSameType(metadata, ifaceImpl.Interface, definitionMetadata, metadataToken)))
+					{
+						yield return new DerivedTypesEntryNode(list, assembly.GetDefinition(h));
 					}
-					SRM.EntityHandle baseType = td.GetBaseTypeOrNil();
+					var baseType = td.GetBaseTypeOrNil();
 					if (!baseType.IsNil && IsSameType(metadata, baseType, definitionMetadata, metadataToken)) {
 						yield return new DerivedTypesEntryNode(list, assembly.GetDefinition(h));
 					}

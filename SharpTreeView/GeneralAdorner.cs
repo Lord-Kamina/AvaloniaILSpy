@@ -16,20 +16,16 @@ namespace ICSharpCode.TreeView
 
 		protected override Size MeasureOverride(Size constraint)
 		{
-			if (Child != null) {
-				Child.Measure(constraint);
-				return Child.DesiredSize;
-			}
-			return new Size();
+			if (Child == null) return new Size();
+			Child.Measure(constraint);
+			return Child.DesiredSize;
 		}
 
 		protected override Size ArrangeOverride(Size finalSize)
 		{
-			if (Child != null) {
-				Child.Arrange(new Rect(finalSize));
-				return finalSize;
-			}
-			return new Size();
+			if (Child == null) return new Size();
+			Child.Arrange(new Rect(finalSize));
+			return finalSize;
 		}
 	}
 }

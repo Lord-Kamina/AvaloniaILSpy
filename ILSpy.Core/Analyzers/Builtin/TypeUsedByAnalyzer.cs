@@ -47,7 +47,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 		IEnumerable<IEntity> ScanType(ITypeDefinition analyzedEntity, ITypeDefinition type, AnalyzerContext context)
 		{
-			if (analyzedEntity.ParentModule.MetadataFile == type.ParentModule.MetadataFile
+			if (analyzedEntity.ParentModule?.MetadataFile == type.ParentModule?.MetadataFile
 				&& analyzedEntity.MetadataToken == type.MetadataToken)
 				yield break;
 
@@ -121,7 +121,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 				return;
 
 			var module = (MetadataModule)method.ParentModule;
-			var genericContext = new Decompiler.TypeSystem.GenericContext(); // type parameters don't matter for this analyzer
+			var genericContext = new GenericContext(); // type parameters don't matter for this analyzer
 
 			if (!methodBody.LocalSignature.IsNil) {
 				foreach (var type in module.DecodeLocalSignature(methodBody.LocalSignature, genericContext)) {
@@ -133,51 +133,56 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
 			var blob = methodBody.GetILReader();
 
-			while (!visitor.Found && blob.RemainingBytes > 0) {
+			while (!visitor.Found && blob.RemainingBytes > 0)
+			{
 				var opCode = blob.DecodeOpCode();
-				switch (opCode.GetOperandType()) {
-					case OperandType.Field:
-					case OperandType.Method:
-					case OperandType.Sig:
-					case OperandType.Tok:
-					case OperandType.Type:
-						var member = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
-						if (member.IsNil) continue;
-						switch (member.Kind) {
-							case HandleKind.TypeReference:
-							case HandleKind.TypeSpecification:
-							case HandleKind.TypeDefinition:
-								module.ResolveType(member, genericContext).AcceptVisitor(visitor);
-								if (visitor.Found) return;
-								break;
-
-							case HandleKind.FieldDefinition:
-							case HandleKind.MethodDefinition:
-							case HandleKind.MemberReference:
-							case HandleKind.MethodSpecification:
-								VisitMember(visitor, module.ResolveEntity(member, genericContext) as IMember, context);
-
-								if (visitor.Found) return;
-								break;
-
-							case HandleKind.StandaloneSignature:
-								var signature = module.DecodeMethodSignature((StandaloneSignatureHandle)member, genericContext);
-								foreach (var type in signature.Item2.ParameterTypes) {
-									type.AcceptVisitor(visitor);
-								}
-
-								signature.Item2.ReturnType.AcceptVisitor(visitor);
-
-								if (visitor.Found) return;
-								break;
-
-							default:
-								break;
+				if (opCode.GetOperandType() == OperandType.Field || opCode.GetOperandType() == OperandType.Method ||
+				    opCode.GetOperandType() == OperandType.Sig || opCode.GetOperandType() == OperandType.Tok ||
+				    opCode.GetOperandType() == OperandType.Type)
+				{
+					var member = MetadataTokenHelpers.EntityHandleOrNil(blob.ReadInt32());
+					if (member.IsNil) continue;
+					switch (member.Kind)
+					{
+						case HandleKind.TypeReference:
+						case HandleKind.TypeSpecification:
+						case HandleKind.TypeDefinition:
+						{
+							module?.ResolveType(member, genericContext).AcceptVisitor(visitor);
+							if (visitor.Found) return;
+							break;
 						}
-						break;
-					default:
-						blob.SkipOperand(opCode);
-						break;
+						case HandleKind.FieldDefinition:
+						case HandleKind.MethodDefinition:
+						case HandleKind.MemberReference:
+						case HandleKind.MethodSpecification:
+						{
+							VisitMember(visitor, module.ResolveEntity(member, genericContext) as IMember, context);
+
+							if (visitor.Found) return;
+							break;
+						}
+						case HandleKind.StandaloneSignature:
+						{
+							var signature =
+								module.DecodeMethodSignature((StandaloneSignatureHandle)member, genericContext);
+							foreach (var type in signature.Item2.ParameterTypes)
+							{
+								type.AcceptVisitor(visitor);
+							}
+
+							signature.Item2.ReturnType.AcceptVisitor(visitor);
+
+							if (visitor.Found) return;
+							break;
+						}
+						default:
+							break;
+					}
+				}
+				else
+				{
+					blob.SkipOperand(opCode);
 				}
 			}
 		}

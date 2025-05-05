@@ -24,18 +24,16 @@ namespace ICSharpCode.TreeView
 		/// <summary>Length in the flat list, including children (children within the flat list). -1 = invalidated</summary>
 		int totalListLength = -1;
 		
-		int Balance {
-			get { return Height(right) - Height(left); }
-		}
-		
+		int Balance => Height(right) - Height(left);
+
 		static int Height(SharpTreeNode node)
 		{
-			return node != null ? node.height : 0;
+			return node?.height ?? 0;
 		}
 		
 		internal SharpTreeNode GetListRoot()
 		{
-			SharpTreeNode node = this;
+			var node = this;
 			while (node.listParent != null)
 				node = node.listParent;
 			return node;
@@ -164,7 +162,7 @@ namespace ICSharpCode.TreeView
 		{
 			if (totalListLength >= 0)
 				return totalListLength;
-			int length = (isVisible ? 1 : 0);
+			var length = (isVisible ? 1 : 0);
 			if (left != null) {
 				length += left.GetTotalListLength();
 			}
@@ -184,8 +182,8 @@ namespace ICSharpCode.TreeView
 			 *           / \          / \
 			 *          B   C        A   B
 			 */
-			SharpTreeNode b = right.left;
-			SharpTreeNode newTop = right;
+			var b = right.left;
+			var newTop = right;
 			
 			if (b != null) b.listParent = this;
 			this.right = b;
@@ -207,8 +205,8 @@ namespace ICSharpCode.TreeView
 			 *     / \                   /  \
 			 *    A   B                 B    C
 			 */
-			SharpTreeNode b = left.right;
-			SharpTreeNode newTop = left;
+			var b = left.right;
+			var newTop = left;
 			
 			if (b != null) b.listParent = this;
 			this.left = b;
@@ -230,7 +228,7 @@ namespace ICSharpCode.TreeView
 				}
 				pos = pos.listParent;
 			}
-			SharpTreeNode newRoot = Rebalance(pos);
+			var newRoot = Rebalance(pos);
 			if (newRoot != pos && pos.treeFlattener != null) {
 				Debug.Assert(newRoot.treeFlattener == null);
 				newRoot.treeFlattener = pos.treeFlattener;

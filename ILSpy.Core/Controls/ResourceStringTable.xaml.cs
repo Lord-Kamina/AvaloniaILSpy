@@ -64,12 +64,12 @@ namespace ICSharpCode.ILSpy.Controls
 
         void ExecuteCopy(object sender, ExecutedRoutedEventArgs args)
 		{
-			StringBuilder sb = new StringBuilder();
+			var sb = new StringBuilder();
 			foreach (var item in resourceListView.SelectedItems)
 			{
 				sb.AppendLine(item.ToString());
 			}
-			App.Current.Clipboard.SetTextAsync(sb.ToString());
+			Application.Current?.Clipboard?.SetTextAsync(sb.ToString());
 		}
 		
 		void CanExecuteCopy(object sender, CanExecuteRoutedEventArgs args)

@@ -86,8 +86,8 @@ namespace ICSharpCode.ILSpy
 				reference = new ReferenceSegment { Reference = result.Member };
 			else
 				reference = null;
-			var position = textView != null ? textView.GetPositionFromMousePosition() : null;
-			var selectedTreeNodes = treeView != null ? treeView.GetTopLevelSelection().ToArray() : null;
+			var position = textView?.GetPositionFromMousePosition();
+			var selectedTreeNodes = treeView?.GetTopLevelSelection().ToArray();
 			return new TextViewContext {
 				TreeView = treeView,
 				SelectedTreeNodes = selectedTreeNodes,
@@ -138,12 +138,11 @@ namespace ICSharpCode.ILSpy
 			treeView.ContextMenu = new ContextMenu();
 			treeView.ContextMenu.ContextMenuOpening += provider.treeView_ContextMenuOpening;
 
-			if (textView != null) {
-				// Context menu is shown only when the ContextMenu property is not null before the
-				// ContextMenuOpening event handler is called.
-				textView.ContextMenu = new ContextMenu();
-				textView.ContextMenu.ContextMenuOpening += provider.textView_ContextMenuOpening;
-			}
+			if (textView == null) return;
+			// Context menu is shown only when the ContextMenu property is not null before the
+			// ContextMenuOpening event handler is called.
+			textView.ContextMenu = new ContextMenu();
+			textView.ContextMenu.ContextMenuOpening += provider.textView_ContextMenuOpening;
 		}
 		
 		public static void Add(DataGrid listBox)
@@ -176,13 +175,13 @@ namespace ICSharpCode.ILSpy
 
 		void treeView_ContextMenuOpening(object sender, CancelEventArgs e)
 		{
-			TextViewContext context = TextViewContext.Create(treeView);
+			var context = TextViewContext.Create(treeView);
 			if (context.SelectedTreeNodes.Length == 0) {
 				e.Cancel = true; // don't show the menu
 				return;
 			}
-			ContextMenu menu = (ContextMenu)sender;
-			if (ShowContextMenu(context, out IEnumerable<IControl> items))
+			var menu = (ContextMenu)sender;
+			if (ShowContextMenu(context, out var items))
 				menu.Items = items;
 			else
 				// hide the context menu.
@@ -191,9 +190,9 @@ namespace ICSharpCode.ILSpy
 		
 		void textView_ContextMenuOpening(object sender, CancelEventArgs e)
 		{
-			TextViewContext context = TextViewContext.Create(textView: textView);
-			ContextMenu menu = (ContextMenu)sender;
-			if (ShowContextMenu(context, out IEnumerable<IControl> items))
+			var context = TextViewContext.Create(textView: textView);
+			var menu = (ContextMenu)sender;
+			if (ShowContextMenu(context, out var items))
 				menu.Items = items;
 			else
 				// hide the context menu.
@@ -202,9 +201,9 @@ namespace ICSharpCode.ILSpy
 
 		void listBox_ContextMenuOpening(object sender, CancelEventArgs e)
 		{
-			TextViewContext context = TextViewContext.Create(listBox: listBox);
-			ContextMenu menu = (ContextMenu)sender;
-			if (ShowContextMenu(context, out IEnumerable<IControl> items))
+			var context = TextViewContext.Create(listBox: listBox);
+			var menu = (ContextMenu)sender;
+			if (ShowContextMenu(context, out var items))
 				menu.Items = items;
 			else
 				// hide the context menu.
@@ -213,31 +212,32 @@ namespace ICSharpCode.ILSpy
 		
 		bool ShowContextMenu(TextViewContext context, out IEnumerable<IControl> menuItems)
 		{
-			List<IControl> items = new List<IControl>();
+			var items = new List<IControl>();
 			foreach (var category in entries.OrderBy(c => c.Metadata.Order).GroupBy(c => c.Metadata.Category)) {
-				bool needSeparatorForCategory = items.Count > 0;
+				var needSeparatorForCategory = items.Count > 0;
 				foreach (var entryPair in category) {
-					IContextMenuEntry entry = entryPair.Value;
-					if (entry.IsVisible(context)) {
-						if (needSeparatorForCategory) {
-							items.Add(new Separator());
-							needSeparatorForCategory = false;
-						}
-						MenuItem menuItem = new MenuItem();
-						menuItem.Header = MainWindow.GetResourceString(entryPair.Metadata.Header);
-						if (!string.IsNullOrEmpty(entryPair.Metadata.Icon)) {
-							menuItem.Icon = new Image {
-								Width = 16,
-								Height = 16,
-								Source = Images.LoadImage(entry, entryPair.Metadata.Icon)
-							};
-						}
-						if (entryPair.Value.IsEnabled(context)) {
-							menuItem.Click += delegate { entry.Execute(context); };
-						} else
-							menuItem.IsEnabled = false;
-						items.Add(menuItem);
+					var entry = entryPair.Value;
+					if (!entry.IsVisible(context)) continue;
+					if (needSeparatorForCategory) {
+						items.Add(new Separator());
+						needSeparatorForCategory = false;
 					}
+					var menuItem = new MenuItem
+					{
+						Header = MainWindow.GetResourceString(entryPair.Metadata.Header)
+					};
+					if (!string.IsNullOrEmpty(entryPair.Metadata.Icon)) {
+						menuItem.Icon = new Image {
+							Width = 16,
+							Height = 16,
+							Source = Images.LoadImage(entry, entryPair.Metadata.Icon)
+						};
+					}
+					if (entryPair.Value.IsEnabled(context)) {
+						menuItem.Click += delegate { entry.Execute(context); };
+					} else
+						menuItem.IsEnabled = false;
+					items.Add(menuItem);
 				}
 			}
 			menuItems = items;

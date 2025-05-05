@@ -34,16 +34,13 @@ namespace ICSharpCode.ILSpy.Controls
 		/// having a XAML file as context.</remarks>
 		public static void SetValueToExtension(this AvaloniaObject targetObject, AvaloniaProperty property, MarkupExtension markupExtension)
 		{
-			// This method was copied from ICSharpCode.Core.Presentation (with permission to switch license to X11)
-			
-			if (targetObject == null)
-				throw new ArgumentNullException(nameof(targetObject));
-			if (property == null)
-				throw new ArgumentNullException(nameof(property));
-			if (markupExtension == null)
-				throw new ArgumentNullException(nameof(markupExtension));
-			
-			var serviceProvider = new SetValueToExtensionServiceProvider(targetObject, property);
+            // This method was copied from ICSharpCode.Core.Presentation (with permission to switch license to X11)
+
+            ArgumentNullException.ThrowIfNull(targetObject);
+            ArgumentNullException.ThrowIfNull(property);
+            ArgumentNullException.ThrowIfNull(markupExtension);
+
+            var serviceProvider = new SetValueToExtensionServiceProvider(targetObject, property);
 			targetObject.SetValue(property, markupExtension.ProvideValue(serviceProvider));
 		}
 		
@@ -62,19 +59,12 @@ namespace ICSharpCode.ILSpy.Controls
 			
 			public object GetService(Type serviceType)
 			{
-				if (serviceType == typeof(IProvideValueTarget))
-					return this;
-				else
-					return null;
+				return serviceType == typeof(IProvideValueTarget) ? this : null;
 			}
 			
-			public object TargetObject {
-				get { return targetObject; }
-			}
-			
-			public object TargetProperty {
-				get { return targetProperty; }
-			}
+			public object TargetObject => targetObject;
+
+			public object TargetProperty => targetProperty;
 		}
 	}
 }

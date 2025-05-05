@@ -92,13 +92,10 @@ namespace ICSharpCode.ILSpy
 
 		private string GetIndentationString(DisplaySettings displaySettings)
 		{
-			if (displaySettings.IndentationUseTabs)
-			{
-				int numberOfTabs = displaySettings.IndentationSize / displaySettings.IndentationTabSize;
-				int numberOfSpaces = displaySettings.IndentationSize % displaySettings.IndentationTabSize;
-				return new string('\t', numberOfTabs) + new string(' ', numberOfSpaces);
-			}
-			return new string(' ', displaySettings.IndentationSize);
+			if (!displaySettings.IndentationUseTabs) return new string(' ', displaySettings.IndentationSize);
+			var numberOfTabs = displaySettings.IndentationSize / displaySettings.IndentationTabSize;
+			var numberOfSpaces = displaySettings.IndentationSize % displaySettings.IndentationTabSize;
+			return new string('\t', numberOfTabs) + new string(' ', numberOfSpaces);
 
 		}
 	}

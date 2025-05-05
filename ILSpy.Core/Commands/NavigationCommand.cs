@@ -29,8 +29,8 @@ namespace ICSharpCode.ILSpy
 
         event EventHandler ICommand.CanExecuteChanged
         {
-            add { interactiveEventHandler += value; }
-            remove { interactiveEventHandler -= value; }
+            add => interactiveEventHandler += value;
+            remove => interactiveEventHandler -= value;
         }
     }
 }

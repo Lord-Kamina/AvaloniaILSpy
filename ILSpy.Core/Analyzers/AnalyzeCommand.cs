@@ -40,12 +40,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 		{
 			if (context.SelectedTreeNodes == null)
 				return context.Reference != null && context.Reference.Reference is IEntity;
-			foreach (IMemberTreeNode node in context.SelectedTreeNodes) {
-				if (!IsValidReference(node.Member))
-					return false;
-			}
-
-			return true;
+			return context.SelectedTreeNodes.Cast<IMemberTreeNode>().All(node => IsValidReference(node.Member));
 		}
 
 		bool IsValidReference(object reference)
@@ -56,7 +51,9 @@ namespace ICSharpCode.ILSpy.Analyzers
         public void Execute(TextViewContext context)
 		{
 			if (context.SelectedTreeNodes != null) {
-				foreach (IMemberTreeNode node in context.SelectedTreeNodes) {
+				foreach (var sharpTreeNode in context.SelectedTreeNodes)
+				{
+					var node = (IMemberTreeNode)sharpTreeNode;
 					AnalyzerTreeView.Instance.Analyze(node.Member);
 				}
 			} else if (context.Reference != null && context.Reference.Reference is IEntity entity) {
@@ -81,7 +78,9 @@ namespace ICSharpCode.ILSpy.Analyzers
 			//		AnalyzerTreeView.Instance.Analyze(node.Member);
 			//	}
 			//} else {
-				foreach (IMemberTreeNode node in MainWindow.Instance.SelectedNodes) {
+				foreach (var ilSpyTreeNode in MainWindow.Instance.SelectedNodes)
+				{
+					var node = (IMemberTreeNode)ilSpyTreeNode;
 					AnalyzerTreeView.Instance.Analyze(node.Member);
 				}
 			//}

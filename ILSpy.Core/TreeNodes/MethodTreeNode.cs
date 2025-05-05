@@ -65,22 +65,16 @@ namespace ICSharpCode.ILSpy.TreeNodes
 
 		internal static AccessOverlayIcon GetOverlayIcon(Accessibility accessibility)
 		{
-			switch (accessibility) {
-				case Accessibility.Public:
-					return AccessOverlayIcon.Public;
-				case Accessibility.Internal:
-					return AccessOverlayIcon.Internal;
-				case Accessibility.ProtectedAndInternal:
-					return AccessOverlayIcon.PrivateProtected;
-				case Accessibility.Protected:
-					return AccessOverlayIcon.Protected;
-				case Accessibility.ProtectedOrInternal:
-					return AccessOverlayIcon.ProtectedInternal;
-				case Accessibility.Private:
-					return AccessOverlayIcon.Private;
-				default:
-					return AccessOverlayIcon.CompilerControlled;
-			}
+			return accessibility switch
+			{
+				Accessibility.Public => AccessOverlayIcon.Public,
+				Accessibility.Internal => AccessOverlayIcon.Internal,
+				Accessibility.ProtectedAndInternal => AccessOverlayIcon.PrivateProtected,
+				Accessibility.Protected => AccessOverlayIcon.Protected,
+				Accessibility.ProtectedOrInternal => AccessOverlayIcon.ProtectedInternal,
+				Accessibility.Private => AccessOverlayIcon.Private,
+				_ => AccessOverlayIcon.CompilerControlled
+			};
 		}
 
 		public override void Decompile(Language language, ITextOutput output, DecompilationOptions options)
@@ -94,20 +88,19 @@ namespace ICSharpCode.ILSpy.TreeNodes
                 return FilterResult.Hidden;
             if (settings.SearchTermMatches(MethodDefinition.Name) && (settings.ShowApiLevel == ApiVisibility.All || settings.Language.ShowMember(MethodDefinition)))
                 return FilterResult.Match;
-			else
-				return FilterResult.Hidden;
+            return FilterResult.Hidden;
 		}
 
 		public override bool IsPublicAPI {
-			get {
-				switch (MethodDefinition.Accessibility) {
-					case Accessibility.Public:
-					case Accessibility.Protected:
-					case Accessibility.ProtectedOrInternal:
-						return true;
-					default:
-						return false;
-				}
+			get
+			{
+				return MethodDefinition.Accessibility switch
+				{
+					Accessibility.Public => true,
+					Accessibility.Protected => true,
+					Accessibility.ProtectedOrInternal => true,
+					_ => false
+				};
 			}
 		}
 

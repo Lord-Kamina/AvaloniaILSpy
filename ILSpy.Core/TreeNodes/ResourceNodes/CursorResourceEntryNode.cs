@@ -19,6 +19,7 @@
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using ICSharpCode.Decompiler.Metadata;
@@ -30,25 +31,19 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	[Export(typeof(IResourceNodeFactory))]
 	sealed class CursorResourceNodeFactory : IResourceNodeFactory
 	{
-		static readonly string[] imageFileExtensions = { ".cur" };
+		private static readonly string[] imageFileExtensions = { ".cur" };
 
 		public ILSpyTreeNode CreateNode(Resource resource)
 		{
-			Stream stream = resource.TryOpenStream();
-			if (stream == null)
-				return null;
-			return CreateNode(resource.Name, stream);
+			var stream = resource.TryOpenStream();
+			return stream == null ? null : CreateNode(resource.Name, stream);
 		}
 
 		public ILSpyTreeNode CreateNode(string key, object data)
 		{
-			if (!(data is Stream))
+			if (!(data is Stream stream))
 			    return null;
-			foreach (string fileExt in imageFileExtensions) {
-				if (key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase))
-					return new CursorResourceEntryNode(key, (Stream)data);
-			}
-			return null;
+			return imageFileExtensions.Any(fileExt => key.EndsWith(fileExt, StringComparison.OrdinalIgnoreCase)) ? new CursorResourceEntryNode(key, stream) : null;
 		}
 	}
 
@@ -59,28 +54,24 @@ namespace ICSharpCode.ILSpy.TreeNodes
 		{
 		}
 
-		public override object Icon
-		{
-			get { return Images.ResourceImage; }
-		}
+		public override object Icon => Images.ResourceImage;
 
 		public override bool View(DecompilerTextView textView)
 		{
 			try {
-				AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+				var output = new AvaloniaEditTextOutput();
 				Data.Position = 0;
                 Bitmap image;
 
                 //HACK: windows imaging does not understand that .cur files have the same layout as .ico
                 // so load to data, and modify the ResourceType in the header to make look like an icon...
-                MemoryStream s = Data as MemoryStream;
-				if (null == s)
+                if (!(Data is MemoryStream s))
 				{
 					// data was stored in another stream type (e.g. PinnedBufferedMemoryStream)
 					s = new MemoryStream();
 					Data.CopyTo(s);
 				}
-				byte[] curData = s.ToArray();
+				var curData = s.ToArray();
 				curData[2] = 1;
 				using (Stream stream = new MemoryStream(curData)) {
                     image = new Bitmap(stream);

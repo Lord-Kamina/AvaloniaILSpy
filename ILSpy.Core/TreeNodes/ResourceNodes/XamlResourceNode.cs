@@ -40,8 +40,7 @@ namespace ICSharpCode.ILSpy.Xaml
 		{
 			if (key.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase) && data is Stream)
 				return new XamlResourceEntryNode(key, (Stream)data);
-			else
-				return null;
+			return null;
 		}
 	}
 	
@@ -55,7 +54,7 @@ namespace ICSharpCode.ILSpy.Xaml
 		
 		public override bool View(DecompilerTextView textView)
 		{
-			AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+			var output = new AvaloniaEditTextOutput();
 			IHighlightingDefinition highlighting = null;
 			
 			textView.RunWithCancellation(

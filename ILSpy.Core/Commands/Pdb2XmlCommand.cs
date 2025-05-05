@@ -31,7 +31,7 @@ using Microsoft.DiaSymReader.Tools;
 namespace ICSharpCode.ILSpy
 {
     [ExportMainMenuCommand(Menu = "_File", Header = "DEBUG -- Dump PDB as XML", MenuCategory = "Open", MenuOrder = 2.6)]
-    sealed class Pdb2XmlCommand : SimpleCommand
+    internal sealed class Pdb2XmlCommand : SimpleCommand
     {
         public override bool CanExecute(object parameter)
         {
@@ -50,15 +50,15 @@ namespace ICSharpCode.ILSpy
             var highlighting = HighlightingManager.Instance.GetDefinitionByExtension(".xml");
             var options = PdbToXmlOptions.IncludeEmbeddedSources | PdbToXmlOptions.IncludeMethodSpans | PdbToXmlOptions.IncludeTokens;
             MainWindow.Instance.TextView.RunWithCancellation(ct => Task<AvaloniaEditTextOutput>.Factory.StartNew(() => {
-                AvaloniaEditTextOutput output = new AvaloniaEditTextOutput();
+                var output = new AvaloniaEditTextOutput();
                 var writer = new TextOutputWriter(output);
                 foreach (var node in nodes)
                 {
-                    string pdbFileName = Path.ChangeExtension(node.LoadedAssembly.FileName, ".pdb");
+                    var pdbFileName = Path.ChangeExtension(node.LoadedAssembly.FileName, ".pdb");
                     if (!File.Exists(pdbFileName)) continue;
-                    using (var pdbStream = File.OpenRead(pdbFileName))
-                    using (var peStream = File.OpenRead(node.LoadedAssembly.FileName))
-                        PdbToXmlConverter.ToXml(writer, pdbStream, peStream, options);
+                    using var pdbStream = File.OpenRead(pdbFileName);
+                    using var peStream = File.OpenRead(node.LoadedAssembly.FileName);
+                    PdbToXmlConverter.ToXml(writer, pdbStream, peStream, options);
                 }
                 return output;
             }, ct)).Then(output => MainWindow.Instance.TextView.ShowNodes(output, null, highlighting)).HandleExceptions();
@@ -66,7 +66,7 @@ namespace ICSharpCode.ILSpy
     }
 
     [ExportContextMenuEntry(Header = "DEBUG -- Dump PDB as XML")]
-    class Pdb2XmlCommandContextMenuEntry : IContextMenuEntry
+    internal class Pdb2XmlCommandContextMenuEntry : IContextMenuEntry
     {
         public void Execute(TextViewContext context)
         {

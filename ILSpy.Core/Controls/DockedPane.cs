@@ -38,7 +38,7 @@ namespace ICSharpCode.ILSpy.Controls
 		protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
 		{
 			base.OnApplyTemplate(e);
-			var closeButton = (Button)e.NameScope.Find<Button>("PART_Close");
+			var closeButton = e.NameScope.Find<Button>("PART_Close");
 			if (closeButton != null)
 			{
 				closeButton.Click += closeButton_Click;

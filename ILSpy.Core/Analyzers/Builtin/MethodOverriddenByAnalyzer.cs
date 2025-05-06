@@ -30,7 +30,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 	[ExportAnalyzer(Header = "Overridden By", Order = 30)]
 	class MethodOverriddenByAnalyzer : IAnalyzer
 	{
-		const GetMemberOptions Options = GetMemberOptions.IgnoreInheritedMembers | GetMemberOptions.ReturnMemberDefinitions;
+		private const GetMemberOptions Options = GetMemberOptions.IgnoreInheritedMembers | GetMemberOptions.ReturnMemberDefinitions;
 
 		public IEnumerable<ISymbol> Analyze(ISymbol analyzedSymbol, AnalyzerContext context)
 		{

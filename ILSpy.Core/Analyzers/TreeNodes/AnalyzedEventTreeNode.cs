@@ -66,11 +66,11 @@ namespace ICSharpCode.ILSpy.Analyzers.TreeNodes
 		bool TryFindBackingField(IEvent analyzedEvent, out IField backingField)
 		{
 			backingField = null;
-			foreach (var field in analyzedEvent.DeclaringTypeDefinition.GetFields(options: GetMemberOptions.IgnoreInheritedMembers)) {
-				if (field.Name == analyzedEvent.Name && field.Accessibility == Accessibility.Private) {
-					backingField = field;
-					return true;
-				}
+			foreach (var field in analyzedEvent.DeclaringTypeDefinition.GetFields(options: GetMemberOptions.IgnoreInheritedMembers))
+			{
+				if (field.Name != analyzedEvent.Name || field.Accessibility != Accessibility.Private) continue;
+				backingField = field;
+				return true;
 			}
 			return false;
 		}

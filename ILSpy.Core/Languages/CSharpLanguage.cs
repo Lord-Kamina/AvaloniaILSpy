@@ -89,23 +89,23 @@ namespace ICSharpCode.ILSpy
         IReadOnlyList<LanguageVersion> versions;
 
         public override IReadOnlyList<LanguageVersion> LanguageVersions =>
-            versions ?? (versions = new List<LanguageVersion>()
+            versions ??= new List<LanguageVersion>()
             {
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp1.ToString(), "C# 1.0 / VS .NET"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp2.ToString(), "C# 2.0 / VS 2005"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp3.ToString(), "C# 3.0 / VS 2008"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp4.ToString(), "C# 4.0 / VS 2010"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp5.ToString(), "C# 5.0 / VS 2012"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp6.ToString(), "C# 6.0 / VS 2015"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7.ToString(), "C# 7.0 / VS 2017"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_1.ToString(), "C# 7.1 / VS 2017.3"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_2.ToString(), "C# 7.2 / VS 2017.4"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp7_3.ToString(), "C# 7.3 / VS 2017.7"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp8_0.ToString(), "C# 8.0 / VS 2019"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp9_0.ToString(), "C# 9.0 / VS 2019.8"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp10_0.ToString(), "C# 10.0 / VS 2022"),
-                new LanguageVersion(Decompiler.CSharp.LanguageVersion.CSharp11_0.ToString(), "C# 11.0 / VS 2022.4"),
-            });
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp1), "C# 1.0 / VS .NET"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp2), "C# 2.0 / VS 2005"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp3), "C# 3.0 / VS 2008"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp4), "C# 4.0 / VS 2010"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp5), "C# 5.0 / VS 2012"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp6), "C# 6.0 / VS 2015"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp7), "C# 7.0 / VS 2017"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp7_1), "C# 7.1 / VS 2017.3"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp7_2), "C# 7.2 / VS 2017.4"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp7_3), "C# 7.3 / VS 2017.7"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp8_0), "C# 8.0 / VS 2019"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp9_0), "C# 9.0 / VS 2019.8"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp10_0), "C# 10.0 / VS 2022"),
+                new LanguageVersion(nameof(Decompiler.CSharp.LanguageVersion.CSharp11_0), "C# 11.0 / VS 2022.4"),
+            };
 
         CSharpDecompiler CreateDecompiler(PEFile module, DecompilationOptions options)
         {
@@ -138,8 +138,7 @@ namespace ICSharpCode.ILSpy
             AddReferenceAssemblyWarningMessage(assembly, output);
             AddReferenceWarningMessage(assembly, output);
             WriteCommentLine(output, TypeToString(method.DeclaringType, includeNamespace: true));
-            var methodDefinition = decompiler.TypeSystem.MainModule.ResolveEntity(method.MetadataToken) as IMethod;
-            if (methodDefinition.IsConstructor && methodDefinition.DeclaringType.IsReferenceType != false)
+            if (decompiler.TypeSystem.MainModule.ResolveEntity(method.MetadataToken) is IMethod { IsConstructor: true } methodDefinition && methodDefinition.DeclaringType.IsReferenceType != false)
             {
                 var members = CollectFieldsAndCtors(methodDefinition.DeclaringTypeDefinition, methodDefinition.IsStatic);
                 decompiler.AstTransforms.Add(new SelectCtorTransform(methodDefinition));
@@ -481,9 +480,11 @@ namespace ICSharpCode.ILSpy
 
         static CSharpAmbience CreateAmbience()
         {
-            CSharpAmbience ambience = new CSharpAmbience();
-            // Do not forget to update CSharpAmbienceTests.ILSpyMainTreeViewTypeFlags, if this ever changes.
-            ambience.ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.PlaceReturnTypeAfterParameterList;
+            var ambience = new CSharpAmbience
+            {
+                // Do not forget to update CSharpAmbienceTests.ILSpyMainTreeViewTypeFlags, if this ever changes.
+                ConversionFlags = ConversionFlags.ShowTypeParameterList | ConversionFlags.PlaceReturnTypeAfterParameterList
+            };
             return ambience;
         }
 
@@ -600,7 +601,7 @@ namespace ICSharpCode.ILSpy
                     var fd = metadata.GetFieldDefinition((FieldDefinitionHandle)handle);
                     var declaringType = fd.GetDeclaringType();
                     if (fullName)
-                        return ToCSharpString(metadata, declaringType, fullName, omitGenerics) + "." + metadata.GetString(fd.Name);
+                        return ToCSharpString(metadata, declaringType, true, omitGenerics) + "." + metadata.GetString(fd.Name);
                     return metadata.GetString(fd.Name);
                 case HandleKind.MethodDefinition:
                     var md = metadata.GetMethodDefinition((MethodDefinitionHandle)handle);
@@ -635,25 +636,26 @@ namespace ICSharpCode.ILSpy
                                         methodName += ",";
                                     var gp = metadata.GetGenericParameter(h);
                                     methodName += metadata.GetString(gp.Name);
+                                    i++;
                                 }
                                 methodName += ">";
                             }
                             break;
                     }
                     if (fullName)
-                        return ToCSharpString(metadata, declaringType, fullName, omitGenerics) + "." + methodName;
+                        return ToCSharpString(metadata, declaringType, true, omitGenerics) + "." + methodName;
                     return methodName;
                 case HandleKind.EventDefinition:
                     var ed = metadata.GetEventDefinition((EventDefinitionHandle)handle);
                     declaringType = metadata.GetMethodDefinition(ed.GetAccessors().GetAny()).GetDeclaringType();
                     if (fullName)
-                        return ToCSharpString(metadata, declaringType, fullName, omitGenerics) + "." + metadata.GetString(ed.Name);
+                        return ToCSharpString(metadata, declaringType, true, omitGenerics) + "." + metadata.GetString(ed.Name);
                     return metadata.GetString(ed.Name);
                 case HandleKind.PropertyDefinition:
                     var pd = metadata.GetPropertyDefinition((PropertyDefinitionHandle)handle);
                     declaringType = metadata.GetMethodDefinition(pd.GetAccessors().GetAny()).GetDeclaringType();
                     if (fullName)
-                        return ToCSharpString(metadata, declaringType, fullName, omitGenerics) + "." + metadata.GetString(pd.Name);
+                        return ToCSharpString(metadata, declaringType, true, omitGenerics) + "." + metadata.GetString(pd.Name);
                     return metadata.GetString(pd.Name);
                 default:
                     return null;

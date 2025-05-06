@@ -48,17 +48,11 @@ namespace ICSharpCode.ILSpy.Options
 
         static Decompiler.DecompilerSettings currentDecompilerSettings;
 
-        public static Decompiler.DecompilerSettings CurrentDecompilerSettings
-        {
-            get
-            {
-                return currentDecompilerSettings ?? (currentDecompilerSettings = LoadDecompilerSettings(ILSpySettings.Load()));
-            }
-        }
+        public static Decompiler.DecompilerSettings CurrentDecompilerSettings => currentDecompilerSettings ??= LoadDecompilerSettings(ILSpySettings.Load());
 
         public static Decompiler.DecompilerSettings LoadDecompilerSettings(ILSpySettings settings)
         {
-            XElement e = settings["DecompilerSettings"];
+            var e = settings["DecompilerSettings"];
             var newSettings = new Decompiler.DecompilerSettings();
             var properties = typeof(Decompiler.DecompilerSettings).GetProperties()
                 .Where(p => p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false);
@@ -78,15 +72,15 @@ namespace ICSharpCode.ILSpy.Options
 
         public void Save(XElement root)
         {
-            XElement section = new XElement("DecompilerSettings");
-            var newSettings = ((DecompilerSettings)this.DataContext).ToDecompilerSettings();
+            var section = new XElement("DecompilerSettings");
+            var newSettings = ((DecompilerSettings)this.DataContext)?.ToDecompilerSettings();
             var properties = typeof(Decompiler.DecompilerSettings).GetProperties()
                 .Where(p => p.GetCustomAttribute<BrowsableAttribute>()?.Browsable != false);
             foreach (var p in properties)
             {
                 section.SetAttributeValue(p.Name, p.GetValue(newSettings));
             }
-            XElement existingElement = root.Element("DecompilerSettings");
+            var existingElement = root.Element("DecompilerSettings");
             if (existingElement != null)
                 existingElement.ReplaceWith(section);
             else
@@ -107,11 +101,9 @@ namespace ICSharpCode.ILSpy.Options
         {
             get
             {
-                if (viewSource == null)
-                {
-                    viewSource = new DataGridCollectionView(Settings);
-                    viewSource.GroupDescriptions.Add(new DataGridPathGroupDescription(nameof(CSharpDecompilerSetting.Category)));
-                }
+                if (viewSource != null) return viewSource;
+                viewSource = new DataGridCollectionView(Settings);
+                viewSource.GroupDescriptions.Add(new DataGridPathGroupDescription(nameof(CSharpDecompilerSetting.Category)));
                 return viewSource;
             }
         }
@@ -162,11 +154,9 @@ namespace ICSharpCode.ILSpy.Options
             get => isEnabled;
             set
             {
-                if (value != isEnabled)
-                {
-                    isEnabled = value;
-                    OnPropertyChanged();
-                }
+                if (value == isEnabled) return;
+                isEnabled = value;
+                OnPropertyChanged();
             }
         }
 

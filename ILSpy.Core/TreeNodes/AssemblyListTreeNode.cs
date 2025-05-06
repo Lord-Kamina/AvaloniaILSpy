@@ -38,10 +38,7 @@ namespace ICSharpCode.ILSpy.TreeNodes
 	{
 		readonly AssemblyList assemblyList;
 
-		public AssemblyList AssemblyList
-		{
-			get { return assemblyList; }
-		}
+		public AssemblyList AssemblyList => assemblyList;
 
 		public AssemblyListTreeNode(AssemblyList assemblyList)
 		{

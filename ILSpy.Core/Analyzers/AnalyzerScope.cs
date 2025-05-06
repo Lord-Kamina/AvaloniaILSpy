@@ -84,7 +84,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 		public IEnumerable<ITypeDefinition> GetTypesInScope(CancellationToken ct)
 		{
 			if (IsLocal) {
-				var typeSystem = new DecompilerTypeSystem(TypeScope.ParentModule.MetadataFile , ((PEFile)TypeScope.ParentModule.MetadataFile).GetAssemblyResolver());
+				var typeSystem = new DecompilerTypeSystem(TypeScope.ParentModule?.MetadataFile , ((PEFile)TypeScope.ParentModule?.MetadataFile).GetAssemblyResolver());
                 var scope = typeScope;
                 if (memberAccessibility != Accessibility.Private && typeScope.DeclaringTypeDefinition != null)
                 {
@@ -108,7 +108,7 @@ namespace ICSharpCode.ILSpy.Analyzers
 		Accessibility DetermineTypeAccessibility(ref ITypeDefinition typeScope)
 		{
 			var typeAccessibility = typeScope.Accessibility;
-			while (typeScope.DeclaringType != null) {
+			while (typeScope?.DeclaringType != null) {
 				var accessibility = typeScope.Accessibility;
 				if ((int)typeAccessibility > (int)accessibility) {
 					typeAccessibility = accessibility;
@@ -155,19 +155,21 @@ namespace ICSharpCode.ILSpy.Analyzers
 
 		IEnumerable<PEFile> GetModuleAndAnyFriends(ITypeDefinition typeScope, CancellationToken ct)
 		{
-			var self =(PEFile) typeScope.ParentModule.MetadataFile ;
+			var self =(PEFile) typeScope.ParentModule?.MetadataFile ;
 
 			yield return self;
 
 			var typeProvider = MetadataExtensions.MinimalAttributeTypeProvider;
-			var attributes = self.Metadata.CustomAttributes.Select(h => self.Metadata.GetCustomAttribute(h))
+			var attributes = self?.Metadata.CustomAttributes.Select(h => self.Metadata.GetCustomAttribute(h))
 				.Where(ca => ca.GetAttributeType(self.Metadata).GetFullTypeName(self.Metadata).ToString() == "System.Runtime.CompilerServices.InternalsVisibleToAttribute");
 			var friendAssemblies = new HashSet<string>();
-			foreach (var attribute in attributes) {
-				var assemblyName = attribute.DecodeValue(typeProvider).FixedArguments[0].Value as string;
-				assemblyName = assemblyName?.Split(',')[0]; // strip off any public key info
-				friendAssemblies.Add(assemblyName);
-			}
+			if (attributes != null)
+				foreach (var attribute in attributes)
+				{
+					var assemblyName = attribute.DecodeValue(typeProvider).FixedArguments[0].Value as string;
+					assemblyName = assemblyName?.Split(',')[0]; // strip off any public key info
+					friendAssemblies.Add(assemblyName);
+				}
 
 			if (friendAssemblies.Count <= 0) yield break;
 			IEnumerable<LoadedAssembly> assemblies = AssemblyList.GetAssemblies();

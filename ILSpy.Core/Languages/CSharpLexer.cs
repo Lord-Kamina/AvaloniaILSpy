@@ -245,21 +245,21 @@ namespace ICSharpCode.ILSpy
 		}
 		protected bool HandleLineEnd(char ch)
 		{
-			// Handle MS-DOS or MacOS line ends.
-			if (ch == '\r') {
-				if (reader.Peek() == '\n') { // MS-DOS line end '\r\n'
+			switch (ch)
+			{
+				// Handle MS-DOS or MacOS line ends.
+				case '\r' when reader.Peek() == '\n': // MS-DOS line end '\r\n'
 					ReaderRead(); // LineBreak (); called by ReaderRead ();
 					return true;
-				} else { // assume MacOS line end which is '\r'
+				case '\r': // assume MacOS line end which is '\r'
 					LineBreak();
 					return true;
-				}
+				case '\n':
+					LineBreak();
+					return true;
+				default:
+					return false;
 			}
-			if (ch == '\n') {
-				LineBreak();
-				return true;
-			}
-			return false;
 		}
 
 		protected void SkipToEndOfLine()
@@ -271,11 +271,11 @@ namespace ICSharpCode.ILSpy
 						reader.Read();
 					nextChar = '\n';
 				}
-				if (nextChar == '\n') {
-					++line;
-					col = 1;
-					break;
-				}
+
+				if (nextChar != '\n') continue;
+				++line;
+				col = 1;
+				break;
 			}
 		}
 
@@ -284,7 +284,7 @@ namespace ICSharpCode.ILSpy
 			sb.Length = 0;
 			int nextChar;
 			while ((nextChar = reader.Read()) != -1) {
-				char ch = (char)nextChar;
+				var ch = (char)nextChar;
 
 				if (nextChar == '\r') {
 					if (reader.Peek() == '\n')
@@ -302,7 +302,7 @@ namespace ICSharpCode.ILSpy
 			}
 
 			// Got EOF before EOL
-			string retStr = sb.ToString();
+			var retStr = sb.ToString();
 			col += retStr.Length;
 			return retStr;
 		}

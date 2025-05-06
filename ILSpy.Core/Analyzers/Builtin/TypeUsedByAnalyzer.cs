@@ -207,15 +207,13 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		public override IType VisitTypeDefinition(ITypeDefinition type)
 		{
 			Found |= TypeDefinition.MetadataToken == type.MetadataToken
-				&& TypeDefinition.ParentModule.MetadataFile == type.ParentModule.MetadataFile;
+				&& TypeDefinition.ParentModule?.MetadataFile == type.ParentModule?.MetadataFile;
 			return base.VisitTypeDefinition(type);
 		}
 
 		public override IType VisitParameterizedType(ParameterizedType type)
 		{
-			if (topLevelOnly)
-				return type.GenericType.AcceptVisitor(this);
-			return base.VisitParameterizedType(type);
+			return topLevelOnly ? type.GenericType.AcceptVisitor(this) : base.VisitParameterizedType(type);
 		}
 	}
 }

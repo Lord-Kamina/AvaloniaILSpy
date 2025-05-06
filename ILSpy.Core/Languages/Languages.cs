@@ -16,6 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -41,7 +42,7 @@ namespace ICSharpCode.ILSpy
 		{
 			var languages = new List<Language>();
 			languages.AddRange(ep.GetExportedValues<Language>());
-			languages.Sort((a, b) => a.Name.CompareTo(b.Name));
+			languages.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
 			#if DEBUG
 			languages.AddRange(ILAstLanguage.GetDebugLanguages());
 			languages.AddRange(CSharpLanguage.GetDebugLanguages());

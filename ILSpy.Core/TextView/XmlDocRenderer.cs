@@ -44,7 +44,7 @@ namespace ICSharpCode.ILSpy.TextView
 				return;
 			Debug.WriteLine(xmlDocumentation);
 			try {
-				XmlTextReader r = new XmlTextReader(new StringReader("<docroot>" + xmlDocumentation + "</docroot>"));
+				var r = new XmlTextReader(new StringReader("<docroot>" + xmlDocumentation + "</docroot>"));
 				r.XmlResolver = null;
 				AddXmlDocumentation(r);
 			} catch (XmlException) {
@@ -57,7 +57,7 @@ namespace ICSharpCode.ILSpy.TextView
 		{
 			while (xml.Read()) {
 				if (xml.NodeType == XmlNodeType.Element) {
-					string elname = xml.Name.ToLowerInvariant();
+					var elname = xml.Name.ToLowerInvariant();
 					switch (elname) {
 						case "filterpriority":
 						case "remarks":
@@ -123,10 +123,7 @@ namespace ICSharpCode.ILSpy.TextView
 			if (cref.Length < 2) {
 				return cref;
 			}
-			if (cref.Substring(1, 1) == ":") {
-				return cref.Substring(2, cref.Length - 2);
-			}
-			return cref;
+			return cref.Substring(1, 1) == ":" ? cref.Substring(2, cref.Length - 2) : cref;
 		}
 		
 		public TextBlock CreateTextBlock()

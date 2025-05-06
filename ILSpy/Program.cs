@@ -23,7 +23,7 @@ namespace ICSharpCode.ILSpy
 			}
 			catch (Exception exception)
 			{
-				Console.WriteLine("Sorry, we crashed");
+				Console.WriteLine(@"Sorry, we crashed");
 				Console.WriteLine(exception.ToString());
 				//MessageBox.Show(exception.ToString(), "Sorry, we crashed");
 			}
@@ -58,7 +58,7 @@ namespace ICSharpCode.ILSpy
 			return app;
 		}
 
-		class ProxyLogSink : ILogSink
+		private class ProxyLogSink : ILogSink
 		{
 			private ILogSink sink;
 
@@ -85,26 +85,22 @@ namespace ICSharpCode.ILSpy
 
 			public void Log(LogEventLevel level, string area, object source, string messageTemplate, params object[] propertyValues)
 			{
-				for (int i = 0; i < propertyValues.Length; i++)
+				for (var i = 0; i < propertyValues.Length; i++)
 				{
 					propertyValues[i] = GetHierachy(propertyValues[i]);
 				}
 				sink.Log(level, area, source, messageTemplate, propertyValues);
 			}
 
-			object GetHierachy(object source)
+			private object GetHierachy(object source)
 			{
-				if (source is IControl visual)
+				if (!(source is IControl visual)) return source;
+				var hierachy = new List<string> { visual.ToString() };
+				while ((visual = visual.Parent) != null)
 				{
-					List<string> hierachy = new List<string>();
-					hierachy.Add(visual.ToString());
-					while ((visual = visual.Parent) != null)
-					{
-						hierachy.Insert(0, visual.ToString());
-					}
-					return string.Join("/", hierachy);
+					hierachy.Insert(0, visual.ToString());
 				}
-				return source;
+				return string.Join("/", hierachy);
 			}
 		}
 	}

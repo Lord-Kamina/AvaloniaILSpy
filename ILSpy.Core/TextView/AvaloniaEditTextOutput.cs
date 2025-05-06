@@ -53,11 +53,7 @@ namespace ICSharpCode.ILSpy.TextView
 		
 		public int GetDefinitionPosition(object definition)
 		{
-			int val;
-			if (definitions.TryGetValue(definition, out val))
-				return val;
-			else
-				return -1;
+			return definitions.GetValueOrDefault(definition, -1);
 		}
 		
 		public void AddDefinition(object definition, int offset)
@@ -109,10 +105,8 @@ namespace ICSharpCode.ILSpy.TextView
 		/// <summary>
 		/// Gets the list of references (hyperlinks).
 		/// </summary>
-		internal TextSegmentCollection<ReferenceSegment> References {
-			get { return references; }
-		}
-		
+		internal TextSegmentCollection<ReferenceSegment> References => references;
+
 		public void AddVisualLineElementGenerator(VisualLineElementGenerator elementGenerator)
 		{
 			elementGenerators.Add(elementGenerator);
@@ -125,16 +119,10 @@ namespace ICSharpCode.ILSpy.TextView
 		/// </summary>
 		public int LengthLimit = int.MaxValue;
 		
-		public int TextLength {
-			get { return b.Length; }
-		}
-		
-		public TextLocation Location {
-			get {
-				return new TextLocation(lineNumber, b.Length - lastLineStart + 1 + (needsIndent ? indent : 0));
-			}
-		}
-		
+		public int TextLength => b.Length;
+
+		public TextLocation Location => new TextLocation(lineNumber, b.Length - lastLineStart + 1 + (needsIndent ? indent : 0));
+
 		#region Text Document
 		TextDocument textDocument;
 		
@@ -235,7 +223,14 @@ namespace ICSharpCode.ILSpy.TextView
         public void WriteReference(MetadataFile metadata, Handle handle, string text, string protocol = "decompile",
 	        bool isDefinition = false)
         {
-	        throw new NotImplementedException();
+	        WriteIndent();
+	        int start = this.TextLength;
+	        b.Append(text);
+	        int end = this.TextLength;
+	        if (isDefinition) {
+		        this.DefinitionLookup.AddDefinition((metadata, handle), this.TextLength);
+	        }
+	        references.Add(new ReferenceSegment { StartOffset = start, EndOffset = end, Reference = (metadata, handle), IsDefinition = isDefinition });
         }
 
         public void WriteReference(PEFile module, Handle handle, string text, string protocol = "decompile", bool isDefinition = false)

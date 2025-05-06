@@ -57,9 +57,9 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 			
 			var textLength = textView.Document.TextLength;
 			if (startOffset < 0 || startOffset > textLength)
-				throw new ArgumentOutOfRangeException(nameof(startOffset), startOffset, "Value must be between 0 and " + textLength);
+				throw new ArgumentOutOfRangeException(nameof(startOffset), startOffset, @"Value must be between 0 and " + textLength);
 			if (length < 0 || startOffset + length > textLength)
-				throw new ArgumentOutOfRangeException(nameof(length), length, "length must not be negative and startOffset+length must not be after the end of the document");
+				throw new ArgumentOutOfRangeException(nameof(length), length, @"length must not be negative and startOffset+length must not be after the end of the document");
 			
 			var m = new TextMarker(this, startOffset, length);
 			markers.Add(m);
@@ -90,7 +90,7 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
             var m = marker as TextMarker;
             if (markers == null || !markers.Remove(m)) return;
             Redraw(m);
-			m.OnDeleted();
+			m?.OnDeleted();
 		}
 		
 		/// <summary>
@@ -140,56 +140,54 @@ namespace ICSharpCode.ILSpy.AvaloniaEdit
 		#endregion
 		
 		#region IBackgroundRenderer
-		public KnownLayer Layer {
-			get {
-				// draw behind selection
-				return KnownLayer.Selection;
-			}
-		}
-		
+		public KnownLayer Layer =>
+			// draw behind selection
+			KnownLayer.Selection;
+
 		public void Draw(TextView textView, DrawingContext drawingContext)
 		{
-			if (textView == null)
-				throw new ArgumentNullException(nameof(textView));
-			if (drawingContext == null)
-				throw new ArgumentNullException(nameof(drawingContext));
-			if (markers == null || !textView.VisualLinesValid)
+            ArgumentNullException.ThrowIfNull(textView);
+            ArgumentNullException.ThrowIfNull(drawingContext);
+            if (markers == null || !textView.VisualLinesValid)
 				return;
 			var visualLines = textView.VisualLines;
 			if (visualLines.Count == 0)
 				return;
-			int viewStart = visualLines.First().FirstDocumentLine.Offset;
-			int viewEnd = visualLines.Last().LastDocumentLine.EndOffset;
-			foreach (TextMarker marker in markers.FindOverlappingSegments(viewStart, viewEnd - viewStart)) {
+			var viewStart = visualLines.First().FirstDocumentLine.Offset;
+			var viewEnd = visualLines.Last().LastDocumentLine.EndOffset;
+			foreach (var marker in markers.FindOverlappingSegments(viewStart, viewEnd - viewStart)) {
 				if (marker.BackgroundColor != null) {
-					BackgroundGeometryBuilder geoBuilder = new BackgroundGeometryBuilder();
-					geoBuilder.AlignToWholePixels = true;
-					geoBuilder.CornerRadius = 3;
+					var geoBuilder = new BackgroundGeometryBuilder
+					{
+						AlignToWholePixels = true,
+						CornerRadius = 3
+					};
 					geoBuilder.AddSegment(textView, marker);
-					Geometry geometry = geoBuilder.CreateGeometry();
+					var geometry = geoBuilder.CreateGeometry();
 					if (geometry != null) {
-						Color color = marker.BackgroundColor.Value;
-						SolidColorBrush brush = new SolidColorBrush(color);
+						var color = marker.BackgroundColor.Value;
+						var brush = new SolidColorBrush(color);
 						//brush.Freeze();
 						drawingContext.DrawGeometry(brush, null, geometry);
 					}
 				}
 				var underlineMarkerTypes = TextMarkerTypes.SquigglyUnderline | TextMarkerTypes.NormalUnderline | TextMarkerTypes.DottedUnderline;
-				if ((marker.MarkerTypes & underlineMarkerTypes) != 0) {
-					foreach (Rect r in BackgroundGeometryBuilder.GetRectsForSegment(textView, marker)) {
-						Point startPoint = r.BottomLeft;
-						Point endPoint = r.BottomRight;
+				if ((marker.MarkerTypes & underlineMarkerTypes) == 0) continue;
+				{
+					foreach (var r in BackgroundGeometryBuilder.GetRectsForSegment(textView, marker)) {
+						var startPoint = r.BottomLeft;
+						var endPoint = r.BottomRight;
 						
 						Brush usedBrush = new SolidColorBrush(marker.MarkerColor);
 						//usedBrush.Freeze();
 						if ((marker.MarkerTypes & TextMarkerTypes.SquigglyUnderline) != 0) {
-							double offset = 2.5;
+							var offset = 2.5;
 							
-							int count = Math.Max((int)((endPoint.X - startPoint.X) / offset) + 1, 4);
+							var count = Math.Max((int)((endPoint.X - startPoint.X) / offset) + 1, 4);
 							
-							StreamGeometry geometry = new StreamGeometry();
+							var geometry = new StreamGeometry();
 							
-							using (StreamGeometryContext ctx = geometry.Open()) {
+							using (var ctx = geometry.Open()) {
 								ctx.BeginFigure(startPoint, false);
 								foreach (var point in CreatePoints(startPoint, endPoint, offset, count)) {
 									ctx.LineTo(point);

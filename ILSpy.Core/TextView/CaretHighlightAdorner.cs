@@ -17,6 +17,7 @@
 // DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Threading;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -53,11 +54,11 @@ namespace ICSharpCode.ILSpy.TextView
 
         public CaretHighlightAdorner(TextArea textArea)
 		{
-            Rect min = textArea.Caret.CalculateCaretRectangle();
+            var min = textArea.Caret.CalculateCaretRectangle();
             min = min.Translate(-textArea.TextView.ScrollOffset);
 
-            double size = Math.Max(min.Width, min.Height) * 0.25;
-            Rect max = min.Inflate(size);
+            var size = Math.Max(min.Width, min.Height) * 0.25;
+            var max = min.Inflate(size);
 
             pen = new Pen(TextBlock.GetForeground(textArea.TextView).ToImmutable());
 
@@ -84,23 +85,25 @@ namespace ICSharpCode.ILSpy.TextView
                 }
             };
 
-            caretAnimation.RunAsync(this, null, default);
+            caretAnimation.RunAsync(this, null, CancellationToken.None);
         }
 
         public static void DisplayCaretHighlightAnimation(TextArea textArea)
 		{
-			AdornerLayer layer = AdornerLayer.GetAdornerLayer(textArea.TextView);
-            CaretHighlightAdorner adorner = new CaretHighlightAdorner(textArea)
+			var layer = AdornerLayer.GetAdornerLayer(textArea.TextView);
+            var adorner = new CaretHighlightAdorner(textArea)
             {
                 [AdornerLayer.AdornedElementProperty] = textArea
             };
-            layer.Children.Add(adorner);
+            layer?.Children.Add(adorner);
 
-			DispatcherTimer timer = new DispatcherTimer();
-			timer.Interval = TimeSpan.FromSeconds(1);
+			var timer = new DispatcherTimer
+			{
+				Interval = TimeSpan.FromSeconds(1)
+			};
 			timer.Tick += delegate {
 				timer.Stop();
-				layer.Children.Remove(adorner);
+				layer?.Children.Remove(adorner);
 			};
 			timer.Start();
 		}

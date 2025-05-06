@@ -107,11 +107,11 @@ namespace ICSharpCode.ILSpy.DebugInfo
 			while (scopes.Count > 0) {
 				var scope = scopes.Dequeue();
 
-				foreach (var local in scope.GetLocals()) {
-					if (local.GetSlot() == index) {
-						name = local.GetName();
-						return true;
-					}
+				foreach (var local in scope.GetLocals())
+				{
+					if (local.GetSlot() != index) continue;
+					name = local.GetName();
+					return true;
 				}
 
 				foreach (var s in scope.GetChildren())
@@ -129,12 +129,12 @@ namespace ICSharpCode.ILSpy.DebugInfo
 			while (scopes.Count > 0) {
 				var scope = scopes.Dequeue();
 
-				foreach (var local in scope.GetLocals()) {
-					if (local.GetSlot() == index) {
-						// name = local.GetName();
-						extraTypeInfo.TupleElementNames = new [] { local.GetName() };
-						return true;
-					}
+				foreach (var local in scope.GetLocals())
+				{
+					if (local.GetSlot() != index) continue;
+					// name = local.GetName();
+					extraTypeInfo.TupleElementNames = new [] { local.GetName() };
+					return true;
 				}
 
 				foreach (var s in scope.GetChildren())

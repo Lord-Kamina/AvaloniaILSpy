@@ -28,7 +28,7 @@ namespace ICSharpCode.ILSpy.Analyzers.TreeNodes
 			: base(analyzedMethod)
 		{
 			if (string.IsNullOrWhiteSpace(name)) {
-				throw new System.ArgumentException("name must be a non-empty string", nameof(name));
+				throw new System.ArgumentException(@"name must be a non-empty string", nameof(name));
 			}
 
 			this.name = name;

@@ -23,35 +23,33 @@ namespace ICSharpCode.ILSpy.Search
         public LiteralSearchStrategy(Language language, ApiVisibility apiVisibility, IProducerConsumerCollection<SearchResult> resultQueue, params string[] terms)
             : base(language, apiVisibility, resultQueue, terms)
         {
-            if (terms.Length == 1)
-            {
-                var lexer = new Lexer(new LATextReader(new System.IO.StringReader(terms[0])));
-                var value = lexer.NextToken();
+            if (terms.Length != 1) return;
+            var lexer = new Lexer(new LATextReader(new System.IO.StringReader(terms[0])));
+            var value = lexer.NextToken();
 
-                if (value != null && value.LiteralValue != null)
-                {
-                    TypeCode valueType = Type.GetTypeCode(value.LiteralValue.GetType());
-                    switch (valueType)
-                    {
-                        case TypeCode.Byte:
-                        case TypeCode.SByte:
-                        case TypeCode.Int16:
-                        case TypeCode.UInt16:
-                        case TypeCode.Int32:
-                        case TypeCode.UInt32:
-                        case TypeCode.Int64:
-                        case TypeCode.UInt64:
-                            searchTermLiteralType = TypeCode.Int64;
-                            searchTermLiteralValue = CSharpPrimitiveCast.Cast(TypeCode.Int64, value.LiteralValue, false);
-                            break;
-                        case TypeCode.Single:
-                        case TypeCode.Double:
-                        case TypeCode.String:
-                            searchTermLiteralType = valueType;
-                            searchTermLiteralValue = value.LiteralValue;
-                            break;
-                    }
-                }
+            if (value?.LiteralValue == null) return;
+            var valueType = Type.GetTypeCode(value.LiteralValue.GetType());
+            switch (valueType)
+            {
+                case TypeCode.Byte:
+                case TypeCode.SByte:
+                case TypeCode.Int16:
+                case TypeCode.UInt16:
+                case TypeCode.Int32:
+                case TypeCode.UInt32:
+                case TypeCode.Int64:
+                case TypeCode.UInt64:
+                    searchTermLiteralType = TypeCode.Int64;
+                    searchTermLiteralValue = CSharpPrimitiveCast.Cast(TypeCode.Int64, value.LiteralValue, false);
+                    break;
+                case TypeCode.Single:
+                case TypeCode.Double:
+                case TypeCode.String:
+                    searchTermLiteralType = valueType;
+                    searchTermLiteralValue = value.LiteralValue;
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -85,7 +83,7 @@ namespace ICSharpCode.ILSpy.Search
                 var blob = metadata.GetBlobReader(constant.Value);
                 if (!IsLiteralMatch(metadata, blob.ReadConstant(constant.TypeCode)))
                     continue;
-                IField field = ((MetadataModule)typeSystem.MainModule).GetDefinition(handle);
+                var field = ((MetadataModule)typeSystem.MainModule).GetDefinition(handle);
                 if (!CheckVisibility(field)) continue;
                 OnFoundResult(field);
             }
@@ -98,11 +96,10 @@ namespace ICSharpCode.ILSpy.Search
             switch (searchTermLiteralType)
             {
                 case TypeCode.Int64:
-                    TypeCode tc = Type.GetTypeCode(val.GetType());
+                    var tc = Type.GetTypeCode(val.GetType());
                     if (tc >= TypeCode.SByte && tc <= TypeCode.UInt64)
                         return CSharpPrimitiveCast.Cast(TypeCode.Int64, val, false).Equals(searchTermLiteralValue);
-                    else
-                        return false;
+                    return false;
                 case TypeCode.Single:
                 case TypeCode.Double:
                 case TypeCode.String:
@@ -116,13 +113,13 @@ namespace ICSharpCode.ILSpy.Search
         bool MethodIsLiteralMatch(PEFile module, MethodDefinition methodDefinition)
         {
             var blob = module.Reader.GetMethodBody(methodDefinition.RelativeVirtualAddress).GetILReader();
+            var val = (long)searchTermLiteralValue;
             if (searchTermLiteralType == TypeCode.Int64)
             {
-                long val = (long)searchTermLiteralValue;
                 while (blob.RemainingBytes > 0)
                 {
                     ILOpCode code;
-                    switch (code = ILParser.DecodeOpCode(ref blob))
+                    switch (code = blob.DecodeOpCode())
                     {
                         case ILOpCode.Ldc_i8:
                             if (val == blob.ReadInt64())
@@ -177,34 +174,26 @@ namespace ICSharpCode.ILSpy.Search
                                 return true;
                             break;
                         default:
-                            ILParser.SkipOperand(ref blob, code);
+                            blob.SkipOperand(code);
                             break;
                     }
                 }
             }
             else if (searchTermLiteralType != TypeCode.Empty)
             {
-                ILOpCode expectedCode;
-                switch (searchTermLiteralType)
+                var expectedCode = searchTermLiteralType switch
                 {
-                    case TypeCode.Single:
-                        expectedCode = ILOpCode.Ldc_r4;
-                        break;
-                    case TypeCode.Double:
-                        expectedCode = ILOpCode.Ldc_r8;
-                        break;
-                    case TypeCode.String:
-                        expectedCode = ILOpCode.Ldstr;
-                        break;
-                    default:
-                        throw new InvalidOperationException();
-                }
+                    TypeCode.Single => ILOpCode.Ldc_r4,
+                    TypeCode.Double => ILOpCode.Ldc_r8,
+                    TypeCode.String => ILOpCode.Ldstr,
+                    _ => throw new InvalidOperationException()
+                };
                 while (blob.RemainingBytes > 0)
                 {
-                    var code = ILParser.DecodeOpCode(ref blob);
+                    var code = blob.DecodeOpCode();
                     if (code != expectedCode)
                     {
-                        ILParser.SkipOperand(ref blob, code);
+                        blob.SkipOperand(code);
                         continue;
                     }
                     switch (code)
@@ -218,7 +207,7 @@ namespace ICSharpCode.ILSpy.Search
                                 return true;
                             break;
                         case ILOpCode.Ldstr:
-                            if ((string)searchTermLiteralValue == ILParser.DecodeUserString(ref blob, module.Metadata))
+                            if ((string)searchTermLiteralValue == blob.DecodeUserString(module.Metadata))
                                 return true;
                             break;
                     }
@@ -228,13 +217,13 @@ namespace ICSharpCode.ILSpy.Search
             {
                 while (blob.RemainingBytes > 0)
                 {
-                    var code = ILParser.DecodeOpCode(ref blob);
+                    var code = blob.DecodeOpCode();
                     if (code != ILOpCode.Ldstr)
                     {
-                        ILParser.SkipOperand(ref blob, code);
+                        blob.SkipOperand(code);
                         continue;
                     }
-                    if (IsMatch(ILParser.DecodeUserString(ref blob, module.Metadata)))
+                    if (IsMatch(blob.DecodeUserString(module.Metadata)))
                         return true;
                 }
             }

@@ -42,27 +42,25 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 
         bool IsBuiltinAttribute(ITypeDefinition attributeType, out KnownAttribute knownAttribute)
         {
-            knownAttribute = attributeType.IsBuiltinAttribute();
-            switch (knownAttribute)
-            {
-                case KnownAttribute.Serializable:
-                case KnownAttribute.ComImport:
-                case KnownAttribute.StructLayout:
-                case KnownAttribute.DllImport:
-                case KnownAttribute.PreserveSig:
-                case KnownAttribute.MethodImpl:
-                case KnownAttribute.FieldOffset:
-                case KnownAttribute.NonSerialized:
-                case KnownAttribute.MarshalAs:
-                case KnownAttribute.PermissionSet:
-                case KnownAttribute.Optional:
-                case KnownAttribute.In:
-                case KnownAttribute.Out:
-                case KnownAttribute.IndexerName:
-                    return true;
-                default:
-                    return false;
-            }
+	        knownAttribute = attributeType.IsBuiltinAttribute();
+	        return knownAttribute switch
+	        {
+		        KnownAttribute.Serializable => true,
+		        KnownAttribute.ComImport => true,
+		        KnownAttribute.StructLayout => true,
+		        KnownAttribute.DllImport => true,
+		        KnownAttribute.PreserveSig => true,
+		        KnownAttribute.MethodImpl => true,
+		        KnownAttribute.FieldOffset => true,
+		        KnownAttribute.NonSerialized => true,
+		        KnownAttribute.MarshalAs => true,
+		        KnownAttribute.PermissionSet => true,
+		        KnownAttribute.Optional => true,
+		        KnownAttribute.In => true,
+		        KnownAttribute.Out => true,
+		        KnownAttribute.IndexerName => true,
+		        _ => false
+	        };
         }
 
         IEnumerable<IEnumerable<ISymbol>> HandleBuiltinAttribute(KnownAttribute attribute, AnalyzerScope scope)
@@ -146,44 +144,33 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 			foreach (var module in scope.GetAllModules()) {
 				var ts = new DecompilerTypeSystem(module, module.GetAssemblyResolver());
 				var referencedParameters = new HashSet<ParameterHandle>();
-				foreach (var h in module.Metadata.CustomAttributes) {
-					var customAttribute = module.Metadata.GetCustomAttribute(h);
-					var attributeCtor = ts.MainModule.ResolveMethod(customAttribute.Constructor, genericContext);
-					if (attributeCtor.DeclaringTypeDefinition != null
-                        && attributeCtor.ParentModule.MetadataFile  == attributeType.ParentModule.MetadataFile 
-                        && attributeCtor.DeclaringTypeDefinition.MetadataToken == attributeType.MetadataToken) {
-                        if (customAttribute.Parent.Kind == HandleKind.Parameter) {
-							referencedParameters.Add((ParameterHandle)customAttribute.Parent);
-						} else {
-							var parent = GetParentEntity(ts, customAttribute);
-							if (parent != null)
-								yield return parent;
-						}
+				foreach (var customAttribute in from h in module.Metadata.CustomAttributes select module.Metadata.GetCustomAttribute(h) into customAttribute let attributeCtor = ts.MainModule.ResolveMethod(customAttribute.Constructor, genericContext) where attributeCtor.DeclaringTypeDefinition != null
+					         && attributeCtor.ParentModule?.MetadataFile == attributeType.ParentModule?.MetadataFile
+					         && attributeCtor.DeclaringTypeDefinition.MetadataToken == attributeType.MetadataToken select customAttribute)
+				{
+					if (customAttribute.Parent.Kind == HandleKind.Parameter) {
+						referencedParameters.Add((ParameterHandle)customAttribute.Parent);
+					} else {
+						var parent = GetParentEntity(ts, customAttribute);
+						if (parent != null)
+							yield return parent;
 					}
 				}
-				if (referencedParameters.Count > 0) {
-					foreach (var h in module.Metadata.MethodDefinitions) {
-						var md = module.Metadata.GetMethodDefinition(h);
-						foreach (var p in md.GetParameters()) {
-							if (referencedParameters.Contains(p)) {
-								var method = ts.MainModule.ResolveMethod(h, genericContext);
-								if (method != null) {
-									if (method.IsAccessor)
-										yield return method.AccessorOwner;
-									else
-										yield return method;
-								}
-								break;
-							}
-						}
-					}
+
+				if (referencedParameters.Count <= 0) continue;
+				foreach (var method in from h in module.Metadata.MethodDefinitions let md = module.Metadata.GetMethodDefinition(h) where md.GetParameters().Any(p => referencedParameters.Contains(p)) select ts.MainModule.ResolveMethod(h, genericContext) into method where method != null select method)
+				{
+					if (method.IsAccessor)
+						yield return method.AccessorOwner;
+					else
+						yield return method;
 				}
 			}
 		}
 
 		ISymbol GetParentEntity(DecompilerTypeSystem ts, CustomAttribute customAttribute)
 		{
-			var metadata = ts.MainModule.MetadataFile .Metadata;
+			var metadata = ts.MainModule.MetadataFile?.Metadata;
 			switch (customAttribute.Parent.Kind) {
 				case HandleKind.MethodDefinition:
 				case HandleKind.FieldDefinition:

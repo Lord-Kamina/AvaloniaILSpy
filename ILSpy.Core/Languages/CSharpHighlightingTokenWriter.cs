@@ -142,10 +142,7 @@ namespace ICSharpCode.ILSpy
 					color = structureKeywordsColor;
 					break;
 				case "where":
-					if (nodeStack.PeekOrDefault() is QueryClause)
-						color = queryKeywordsColor;
-					else
-						color = structureKeywordsColor;
+					color = nodeStack.PeekOrDefault() is QueryClause ? queryKeywordsColor : structureKeywordsColor;
 					break;
 				case "in":
 					if (nodeStack.PeekOrDefault() is ForeachStatement)
@@ -358,12 +355,17 @@ namespace ICSharpCode.ILSpy
 		public override void WritePrimitiveValue(object value, LiteralFormat literalValue = LiteralFormat.None)
 		{
 			HighlightingColor color = null;
-			if (value is null) {
-				color = valueKeywordColor;
+			switch (value)
+			{
+				case null:
+					color = valueKeywordColor;
+					break;
+				case true:
+				case false:
+					color = trueKeywordColor;
+					break;
 			}
-			if (value is true || value is false) {
-				color = trueKeywordColor;
-			}
+
 			if (color != null) {
 				textOutput.BeginSpan(color);
 			}
@@ -386,7 +388,7 @@ namespace ICSharpCode.ILSpy
 
 		ISymbol GetCurrentMemberReference()
 		{
-			AstNode node = nodeStack.Peek();
+			var node = nodeStack.Peek();
 			var symbol = node.GetSymbol();
 			if (symbol == null && node.Role == Roles.TargetExpression && node.Parent is InvocationExpression) {
 				symbol = node.Parent.GetSymbol();
@@ -394,12 +396,11 @@ namespace ICSharpCode.ILSpy
 			if (symbol != null && node.Parent is ObjectCreateExpression) {
 				symbol = node.Parent.GetSymbol();
 			}
-			if (node is IdentifierExpression && node.Role == Roles.TargetExpression && node.Parent is InvocationExpression && symbol is IMember member) {
-				var declaringType = member.DeclaringType;
-				if (declaringType != null && declaringType.Kind == TypeKind.Delegate)
-					return null;
-			}
-			return symbol;
+
+			if (!(node is IdentifierExpression) || node.Role != Roles.TargetExpression ||
+			    !(node.Parent is InvocationExpression) || !(symbol is IMember member)) return symbol;
+			var declaringType = member.DeclaringType;
+			return declaringType.Kind == TypeKind.Delegate ? null : symbol;
 		}
 
 		Stack<AstNode> nodeStack = new Stack<AstNode>();

@@ -34,27 +34,22 @@ namespace ICSharpCode.ILSpy
 
         public BracketSearchResult SearchBracket(IDocument document, int offset)
         {
-            if (offset > 0)
-            {
-                char c = document.GetCharAt(offset - 1);
-                int index = openingBrackets.IndexOf(c);
-                int otherOffset = -1;
-                if (index > -1)
-                    otherOffset = SearchBracketForward(document, offset, openingBrackets[index], closingBrackets[index]);
+            if (offset <= 0) return null;
+            var c = document.GetCharAt(offset - 1);
+            var index = openingBrackets.IndexOf(c);
+            var otherOffset = -1;
+            if (index > -1)
+                otherOffset = SearchBracketForward(document, offset, openingBrackets[index], closingBrackets[index]);
 
-                index = closingBrackets.IndexOf(c);
-                if (index > -1)
-                    otherOffset = SearchBracketBackward(document, offset - 2, openingBrackets[index], closingBrackets[index]);
+            index = closingBrackets.IndexOf(c);
+            if (index > -1)
+                otherOffset = SearchBracketBackward(document, offset - 2, openingBrackets[index], closingBrackets[index]);
 
-                if (otherOffset > -1)
-                {
-                    var result = new BracketSearchResult(Math.Min(offset - 1, otherOffset), 1,
-                                                         Math.Max(offset - 1, otherOffset), 1);
-                    return result;
-                }
-            }
+            if (otherOffset <= -1) return null;
+            var result = new BracketSearchResult(Math.Min(offset - 1, otherOffset), 1,
+                Math.Max(offset - 1, otherOffset), 1);
+            return result;
 
-            return null;
         }
 
         #region SearchBracket helper functions
@@ -367,11 +362,11 @@ namespace ICSharpCode.ILSpy
 
         int QuickSearchBracketBackward(IDocument document, int offset, char openBracket, char closingBracket)
         {
-            int brackets = -1;
+            var brackets = -1;
             // first try "quick find" - find the matching bracket if there is no string/comment in the way
-            for (int i = offset; i >= 0; --i)
+            for (var i = offset; i >= 0; --i)
             {
-                char ch = document.GetCharAt(i);
+                var ch = document.GetCharAt(i);
                 if (ch == openBracket)
                 {
                     ++brackets;
@@ -400,11 +395,11 @@ namespace ICSharpCode.ILSpy
 
         int QuickSearchBracketForward(IDocument document, int offset, char openBracket, char closingBracket)
         {
-            int brackets = 1;
+            var brackets = 1;
             // try "quick find" - find the matching bracket if there is no string/comment in the way
-            for (int i = offset; i < document.TextLength; ++i)
+            for (var i = offset; i < document.TextLength; ++i)
             {
-                char ch = document.GetCharAt(i);
+                var ch = document.GetCharAt(i);
                 if (ch == openBracket)
                 {
                     ++brackets;
@@ -422,11 +417,7 @@ namespace ICSharpCode.ILSpy
                 {
                     break;
                 }
-                else if (ch == '/' && i > 0)
-                {
-                    if (document.GetCharAt(i - 1) == '/') break;
-                }
-                else if (ch == '*' && i > 0)
+                else if (ch == '/' && i > 0 || ch == '*' && i > 0)
                 {
                     if (document.GetCharAt(i - 1) == '/') break;
                 }

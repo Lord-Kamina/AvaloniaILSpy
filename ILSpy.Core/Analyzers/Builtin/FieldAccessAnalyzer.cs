@@ -55,9 +55,9 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 	/// <summary>
 	/// Finds methods where this field is read or written.
 	/// </summary>
-	class FieldAccessAnalyzer : IAnalyzer
+	internal class FieldAccessAnalyzer : IAnalyzer
 	{
-		const GetMemberOptions Options = GetMemberOptions.IgnoreInheritedMembers | GetMemberOptions.ReturnMemberDefinitions;
+		private const GetMemberOptions Options = GetMemberOptions.IgnoreInheritedMembers | GetMemberOptions.ReturnMemberDefinitions;
 
 		readonly bool showWrites; // true: show writes; false: show read access
 

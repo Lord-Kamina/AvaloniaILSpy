@@ -155,8 +155,7 @@ namespace ICSharpCode.ILSpy.Options
 			else
 				root.Add(section);
 
-			if (currentDisplaySettings != null)
-				currentDisplaySettings.CopyValues(s);
+			currentDisplaySettings?.CopyValues(s);
 		}
 
         private void TextBox_PreviewTextInput(object sender, TextInputEventArgs e)

@@ -16,11 +16,9 @@ namespace ICSharpCode.ILSpy.Search
         public MetadataTokenSearchStrategy(Language language, ApiVisibility apiVisibility, IProducerConsumerCollection<SearchResult> resultQueue, params string[] terms)
             : base(language, apiVisibility, resultQueue, terms)
         {
-            if (terms.Length == 1)
-            {
-                int.TryParse(terms[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var token);
-                searchTermToken = MetadataTokenHelpers.EntityHandleOrNil(token);
-            }
+            if (terms.Length != 1) return;
+            int.TryParse(terms[0], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var token);
+            searchTermToken = MetadataTokenHelpers.EntityHandleOrNil(token);
         }
 
         public override void Search(PEFile module, CancellationToken cancellationToken)
@@ -30,7 +28,7 @@ namespace ICSharpCode.ILSpy.Search
             var typeSystem = module.GetTypeSystemOrNull();
             if (typeSystem == null) return;
             var metadataModule = (MetadataModule)typeSystem.MainModule;
-            int row = module.Metadata.GetRowNumber(searchTermToken);
+            var row = module.Metadata.GetRowNumber(searchTermToken);
 
             switch (searchTermToken.Kind)
             {

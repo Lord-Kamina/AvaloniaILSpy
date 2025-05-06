@@ -27,14 +27,14 @@ namespace ICSharpCode.ILSpy.Search
 
             if (terms.Length == 1 && terms[0].Length > 2)
             {
-                string search = terms[0];
+                var search = terms[0];
                 if (search.StartsWith("/", StringComparison.Ordinal) && search.Length > 4)
                 {
                     var regexString = search.Substring(1, search.Length - 1);
                     fullNameSearch = search.Contains("\\.");
                     omitGenerics = !search.Contains("<");
                     if (regexString.EndsWith("/", StringComparison.Ordinal))
-                        regexString = regexString.Substring(0, regexString.Length - 1);
+                        regexString = regexString[..^1];
                     regex = SafeNewRegex(regexString);
                 }
                 else
@@ -55,31 +55,31 @@ namespace ICSharpCode.ILSpy.Search
                 return regex.IsMatch(entityName);
             }
 
-            for (int i = 0; i < searchTerm.Length; ++i)
+            foreach (var t in searchTerm)
             {
                 // How to handle overlapping matches?
-                var term = searchTerm[i];
+                var term = t;
                 if (string.IsNullOrEmpty(term)) continue;
-                string text = entityName;
+                var text = entityName;
                 switch (term[0])
                 {
                     case '+': // must contain
                         term = term.Substring(1);
                         goto default;
                     case '-': // should not contain
-                        if (term.Length > 1 && text.IndexOf(term.Substring(1), StringComparison.OrdinalIgnoreCase) >= 0)
+                        if (term.Length > 1 && text.IndexOf(term[1..], StringComparison.OrdinalIgnoreCase) >= 0)
                             return false;
                         break;
                     case '=': // exact match
-                        {
-                            var equalCompareLength = text.IndexOf('`');
-                            if (equalCompareLength == -1)
-                                equalCompareLength = text.Length;
+                    {
+                        var equalCompareLength = text.IndexOf('`');
+                        if (equalCompareLength == -1)
+                            equalCompareLength = text.Length;
 
-                            if (term.Length > 1 && String.Compare(term, 1, text, 0, Math.Max(term.Length, equalCompareLength),
+                        if (term.Length > 1 && String.Compare(term, 1, text, 0, Math.Max(term.Length, equalCompareLength),
                                 StringComparison.OrdinalIgnoreCase) != 0)
-                                return false;
-                        }
+                            return false;
+                    }
                         break;
                     case '~':
                         if (term.Length > 1 && !IsNoncontiguousMatch(text.ToLower(), term.Substring(1).ToLower()))

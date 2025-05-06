@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection.Metadata;
 using ICSharpCode.Decompiler.DebugInfo;
 using ICSharpCode.Decompiler.Metadata;
@@ -73,12 +74,9 @@ namespace ICSharpCode.ILSpy.DebugInfo
 			var metadata = provider.GetMetadataReader();
 			var variables = new List<Variable>();
 
-			foreach (var h in metadata.GetLocalScopes(method)) {
-				var scope = metadata.GetLocalScope(h);
-				foreach (var v in scope.GetLocalVariables()) {
-					var var = metadata.GetLocalVariable(v);
-					variables.Add(new Variable(var.Index, metadata.GetString(var.Name)));
-				}
+			foreach (var scope in metadata.GetLocalScopes(method).Select(h => metadata.GetLocalScope(h)))
+			{
+				variables.AddRange(scope.GetLocalVariables().Select(v => metadata.GetLocalVariable(v)).Select(var => new Variable(var.Index, metadata.GetString(var.Name))));
 			}
 
 			return variables;
@@ -89,15 +87,10 @@ namespace ICSharpCode.ILSpy.DebugInfo
 			var metadata = provider.GetMetadataReader();
 			name = null;
 
-			foreach (var h in metadata.GetLocalScopes(method)) {
-				var scope = metadata.GetLocalScope(h);
-				foreach (var v in scope.GetLocalVariables()) {
-					var var = metadata.GetLocalVariable(v);
-					if (var.Index == index) {
-						name = metadata.GetString(var.Name);
-						return true;
-					}
-				}
+			foreach (var var in metadata.GetLocalScopes(method).Select(h => metadata.GetLocalScope(h)).SelectMany(scope => scope.GetLocalVariables().Select(v => metadata.GetLocalVariable(v)).Where(var => var.Index == index)))
+			{
+				name = metadata.GetString(var.Name);
+				return true;
 			}
 			return false;
 		}
@@ -107,18 +100,10 @@ namespace ICSharpCode.ILSpy.DebugInfo
 			var metadata = provider.GetMetadataReader();
 			extraTypeInfo = new PdbExtraTypeInfo();
 
-			foreach (var h in metadata.GetLocalScopes(method))
+			foreach (var var in metadata.GetLocalScopes(method).Select(h => metadata.GetLocalScope(h)).SelectMany(scope => scope.GetLocalVariables().Select(v => metadata.GetLocalVariable(v)).Where(var => var.Index == index)))
 			{
-				var scope = metadata.GetLocalScope(h);
-				foreach (var v in scope.GetLocalVariables())
-				{
-					var var = metadata.GetLocalVariable(v);
-					if (var.Index == index)
-					{
-						extraTypeInfo.TupleElementNames = new[] { metadata.GetString(var.Name) };
-						return true;
-					}
-				}
+				extraTypeInfo.TupleElementNames = new[] { metadata.GetString(var.Name) };
+				return true;
 			}
 
 			return false;

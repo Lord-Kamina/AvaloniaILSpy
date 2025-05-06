@@ -62,18 +62,16 @@ namespace ICSharpCode.ILSpy.TextView
 
 		public void SetHighlight(BracketSearchResult result)
 		{
-			if (this.result != result) {
-				this.result = result;
-				textView.InvalidateLayer(this.Layer);
-			}
+			if (this.result == result) return;
+			this.result = result;
+			textView.InvalidateLayer(this.Layer);
 		}
 
 		public BracketHighlightRenderer(global::AvaloniaEdit.Rendering.TextView textView)
 		{
-			if (textView == null)
-				throw new ArgumentNullException("textView");
+            ArgumentNullException.ThrowIfNull(textView);
 
-			this.borderPen = new Pen(new SolidColorBrush(Color.FromArgb(52, 0, 0, 255)), 1).ToImmutable();
+            this.borderPen = new Pen(new SolidColorBrush(Color.FromArgb(52, 0, 0, 255)), 1).ToImmutable();
 
 			this.backgroundBrush = new SolidColorBrush(Color.FromArgb(22, 0, 0, 255)).ToImmutable();
 
@@ -82,26 +80,23 @@ namespace ICSharpCode.ILSpy.TextView
 			this.textView.BackgroundRenderers.Add(this);
 		}
 
-		public KnownLayer Layer {
-			get {
-				return KnownLayer.Selection;
-			}
-		}
+		public KnownLayer Layer => KnownLayer.Selection;
 
 		public void Draw(global::AvaloniaEdit.Rendering.TextView textView, DrawingContext drawingContext)
 		{
 			if (this.result == null)
 				return;
 
-			BackgroundGeometryBuilder builder = new BackgroundGeometryBuilder();
-
-			builder.CornerRadius = 1;
+			var builder = new BackgroundGeometryBuilder
+			{
+				CornerRadius = 1
+			};
 
 			builder.AddSegment(textView, new TextSegment() { StartOffset = result.OpeningBracketOffset, Length = result.OpeningBracketLength });
 			builder.CloseFigure(); // prevent connecting the two segments
 			builder.AddSegment(textView, new TextSegment() { StartOffset = result.ClosingBracketOffset, Length = result.ClosingBracketLength });
 
-			Geometry geometry = builder.CreateGeometry();
+			var geometry = builder.CreateGeometry();
 			if (geometry != null) {
 				drawingContext.DrawGeometry(backgroundBrush, borderPen, geometry);
 			}

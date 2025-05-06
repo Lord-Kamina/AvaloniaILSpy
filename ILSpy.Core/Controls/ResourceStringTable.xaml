@@ -8,15 +8,11 @@
     <x:Null />
     <x:Null />
   </x:Arguments>
-	<Grid Margin="5,0,0,0">
-		<Grid.RowDefinitions>
-			<RowDefinition Height="30" />
-			<RowDefinition />
-		</Grid.RowDefinitions>
+	<Grid Margin="5,0,0,0" RowDefinitions="30,*">
 		<TextBlock Margin="5" Text="{x:Static properties:Resources.StringTable}"
-			   FontFamily="Segoe UI"
-			   FontWeight="Bold"
-			   FontSize="12" />
+		           FontFamily="Segoe UI"
+		           FontWeight="Bold"
+		           FontSize="12" />
         <DataGrid Name="resourceListView"
                   FontFamily="Segoe UI"
                   FontSize="9"

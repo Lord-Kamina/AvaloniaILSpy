@@ -8,11 +8,7 @@
         <x:Null />
         <x:Null />
     </x:Arguments>
-    <Grid Margin="5,0,0,0">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="30" />
-            <RowDefinition />
-        </Grid.RowDefinitions>
+    <Grid Margin="5,0,0,0" RowDefinitions="30,*">
         <TextBlock Margin="5" Text="{x:Static properties:Resources.OtherResources}" FontFamily="Segoe UI" FontWeight="Bold" FontSize="12" />
         <DataGrid Name="resourceListView" FontFamily="Segoe UI" FontSize="9" Grid.Row="1" RowBackground="{DynamicResource ThemeBackgroundBrush}" AlternatingRowBackground="{DynamicResource ThemeAccentBrush4}" CanUserResizeColumns="True">
             <DataGrid.Columns>

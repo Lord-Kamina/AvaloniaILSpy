@@ -38,20 +38,18 @@ namespace ICSharpCode.Decompiler.PdbProvider.Cecil
 
 		public unsafe MonoCecilDebugInfoProvider(PEFile module, string pdbFileName, string description = null)
 		{
-			if (module == null) {
-				throw new ArgumentNullException(nameof(module));
-			}
+            ArgumentNullException.ThrowIfNull(module);
 
-			if (!module.Reader.IsEntireImageAvailable) {
+            if (!module.Reader.IsEntireImageAvailable) {
 				throw new ArgumentException("This provider needs access to the full image!");
 			}
 
-			this.Description = description ?? $"Loaded from PDB file: {pdbFileName}";
+			this.Description = description ?? $@"Loaded from PDB file: {pdbFileName}";
 			this.SourceFileName = pdbFileName;
 
 			var image = module.Reader.GetEntireImage();
 			this.debugInfo = new Dictionary<SRM.MethodDefinitionHandle, (IList<SequencePoint> SequencePoints, IList<Variable> Variables)>();
-			using (UnmanagedMemoryStream stream = new UnmanagedMemoryStream(image.Pointer, image.Length))
+			using (var stream = new UnmanagedMemoryStream(image.Pointer, image.Length))
 			using (var moduleDef = ModuleDefinition.ReadModule(stream)) {
 				moduleDef.ReadSymbols(new PdbReaderProvider().GetSymbolReader(moduleDef, pdbFileName));
 
@@ -91,21 +89,13 @@ namespace ICSharpCode.Decompiler.PdbProvider.Cecil
         public string SourceFileName { get; }
 
         public IList<SequencePoint> GetSequencePoints(SRM.MethodDefinitionHandle handle)
-		{
-			if (!debugInfo.TryGetValue(handle, out var info)) {
-				return EmptyList<SequencePoint>.Instance;
-			}
-
-			return info.SequencePoints;
-		}
+        {
+	        return !debugInfo.TryGetValue(handle, out var info) ? EmptyList<SequencePoint>.Instance : info.SequencePoints;
+        }
 
 		public IList<Variable> GetVariables(SRM.MethodDefinitionHandle handle)
 		{
-			if (!debugInfo.TryGetValue(handle, out var info)) {
-				return EmptyList<Variable>.Instance;
-			}
-
-			return info.Variables;
+			return !debugInfo.TryGetValue(handle, out var info) ? EmptyList<Variable>.Instance : info.Variables;
 		}
 
 		public bool TryGetName(SRM.MethodDefinitionHandle handle, int index, out string name)

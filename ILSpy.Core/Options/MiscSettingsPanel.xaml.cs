@@ -46,18 +46,16 @@ namespace ICSharpCode.ILSpy.Options
 
 		static MiscSettings currentMiscSettings;
 
-		public static MiscSettings CurrentMiscSettings {
-			get {
-				return currentMiscSettings ?? (currentMiscSettings = LoadMiscSettings(ILSpySettings.Load()));
-			}
-		}
+		public static MiscSettings CurrentMiscSettings => currentMiscSettings ??= LoadMiscSettings(ILSpySettings.Load());
 
 		public static MiscSettings LoadMiscSettings(ILSpySettings settings)
 		{
-			XElement e = settings["MiscSettings"];
-			var s = new MiscSettings();
-			s.AllowMultipleInstances = (bool?)e.Attribute("AllowMultipleInstances") ?? false;
-            s.LoadPreviousAssemblies = (bool?)e.Attribute(nameof(s.LoadPreviousAssemblies)) ?? true;
+			var e = settings["MiscSettings"];
+			var s = new MiscSettings
+			{
+				AllowMultipleInstances = (bool?)e.Attribute("AllowMultipleInstances") ?? false
+			};
+			s.LoadPreviousAssemblies = (bool?)e.Attribute(nameof(s.LoadPreviousAssemblies)) ?? true;
 
             return s;
 		}
@@ -70,7 +68,7 @@ namespace ICSharpCode.ILSpy.Options
 			section.SetAttributeValue("AllowMultipleInstances", s.AllowMultipleInstances);
             section.SetAttributeValue(nameof(s.LoadPreviousAssemblies), s.LoadPreviousAssemblies);
 
-            XElement existingElement = root.Element("MiscSettings");
+            var existingElement = root.Element("MiscSettings");
 			if (existingElement != null)
 				existingElement.ReplaceWith(section);
 			else

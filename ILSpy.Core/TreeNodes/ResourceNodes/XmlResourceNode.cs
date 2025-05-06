@@ -32,7 +32,7 @@ namespace ICSharpCode.ILSpy.Xaml
 	[Export(typeof(IResourceNodeFactory))]
 	sealed class XmlResourceNodeFactory : IResourceNodeFactory
 	{
-		private readonly static string[] xmlFileExtensions = { ".xml", ".xsd", ".xslt" };
+		private static readonly string[] xmlFileExtensions = { ".xml", ".xsd", ".xslt" };
 
 		public ILSpyTreeNode CreateNode(Resource resource)
 		{

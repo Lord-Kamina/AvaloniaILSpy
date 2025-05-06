@@ -16,6 +16,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
+using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Avalonia.Media;
@@ -65,11 +66,9 @@ namespace ICSharpCode.ILSpy.Options
             get => selectedFontSize;
             set
             {
-                if (selectedFontSize != value)
-                {
-                    selectedFontSize = value;
-                    OnPropertyChanged();
-                }
+                if (Math.Abs(selectedFontSize - value) < 0.001) return;
+                selectedFontSize = value;
+                OnPropertyChanged();
             }
         }
 

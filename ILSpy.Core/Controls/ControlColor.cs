@@ -53,11 +53,9 @@ namespace ICSharpCode.ILSpy.Controls
 		{
 			if (Color > 227) {
 				return Interpolate(227, SystemColors.ControlLightColor, 255, SystemColors.ControlLightLightColor);
-			} else if (Color > 160) {
-				return Interpolate(160, SystemColors.ControlDarkColor, 227, SystemColors.ControlLightColor);
-			} else {
-				return Interpolate(105, SystemColors.ControlDarkDarkColor, 160, SystemColors.ControlDarkColor);
 			}
+
+			return Color > 160 ? Interpolate(160, SystemColors.ControlDarkColor, 227, SystemColors.ControlLightColor) : Interpolate(105, SystemColors.ControlDarkDarkColor, 160, SystemColors.ControlDarkColor);
 		}
 		
 		Color Interpolate(float v1, Color c1, float v2, Color c2)

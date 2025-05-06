@@ -28,7 +28,7 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 	/// Shows events that implement an interface event.
 	/// </summary>
 	[ExportAnalyzer(Header = "Implemented By", Order = 10)]
-	class EventImplementsInterfaceAnalyzer : IAnalyzer
+	internal class EventImplementsInterfaceAnalyzer : IAnalyzer
 	{
 		public IEnumerable<ISymbol> Analyze(ISymbol analyzedSymbol, AnalyzerContext context)
 		{
@@ -43,8 +43,8 @@ namespace ICSharpCode.ILSpy.Analyzers.Builtin
 		IEnumerable<IEntity> AnalyzeType(IEvent analyzedEntity, ITypeDefinition type)
         {
             var token = analyzedEntity.MetadataToken;
-            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition.MetadataToken;
-            var module = analyzedEntity.DeclaringTypeDefinition.ParentModule.MetadataFile ;
+            var declaringTypeToken = analyzedEntity.DeclaringTypeDefinition?.MetadataToken;
+            var module = analyzedEntity.DeclaringTypeDefinition?.ParentModule?.MetadataFile ;
             var allTypes = type.GetAllBaseTypeDefinitions();
             if (!allTypes.Any(t => t.MetadataToken == declaringTypeToken && t.ParentModule?.MetadataFile  == module))
                 yield break;

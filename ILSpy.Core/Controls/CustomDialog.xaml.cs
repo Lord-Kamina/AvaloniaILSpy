@@ -38,12 +38,7 @@ namespace ICSharpCode.ILSpy.Controls
 		/// <summary>
 		/// Gets the index of the button pressed.
 		/// </summary>
-		public int Result
-		{
-			get {
-				return (int)DialogResult;
-			}
-		}
+		public int Result => (int)DialogResult;
 
 		public CustomDialog(string caption, string message, int acceptButton = -1, int cancelButton = -1, params string[] buttonLabels)
 		{
@@ -79,8 +74,8 @@ namespace ICSharpCode.ILSpy.Controls
 
 		void ButtonClick(object sender, RoutedEventArgs e)
 		{
-            Button button = sender as Button;
-            int index = buttons.ItemContainerGenerator.IndexFromContainer(button.Parent);
+            var button = sender as Button;
+            var index = buttons.ItemContainerGenerator.IndexFromContainer(button!.Parent);
             this.Close(index);
 			e.Handled = true;
 		}
